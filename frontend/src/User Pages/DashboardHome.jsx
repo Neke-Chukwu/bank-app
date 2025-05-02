@@ -74,7 +74,7 @@ const DashboardHome = () => {
           axios.get("http://localhost:5000/api/transfers/transactions", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("http://localhost:5000/api/users/cards", {
+          axios.get("http://localhost:5000/api/card/all", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
         ]);
@@ -112,6 +112,9 @@ const DashboardHome = () => {
         } else {
           setCardDetails(cardsResponse.data?.cards || null);
         }
+        
+
+
 
         // Only set error if all critical fetches fail
         if (
@@ -136,6 +139,36 @@ const DashboardHome = () => {
 
     fetchUserData();
   }, [navigate]);
+
+  const handleDeleteCard = async (cardId, cardType) => {
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error("Please log in to delete a card.");
+      }
+
+      await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Update cardDetails state
+      setCardDetails((prev) => ({
+        ...prev,
+        [cardType.toLowerCase()]: null,
+      }));
+      localStorage.removeItem(`cardBrand_${cardType.toLowerCase()}`);
+    } catch (error) {
+      console.error("Error deleting card:", error);
+    }
+  };
+
+  // Removed undefined 'cardsResponse' reference
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    navigate("/login");
+  };
 
   const filteredTransactions = useMemo(() => {
     if (!Array.isArray(transactions)) return [];
@@ -306,7 +339,7 @@ const DashboardHome = () => {
                   <ul
                     className="dropdown-menu dropdown-menu-end"
                     aria-labelledby="profileDropdown"
-                    style={{ backgroundColor: "#white" }}
+                    style={{ backgroundColor: "white" }}
                   >
                     <li>
                       <button
@@ -324,6 +357,15 @@ const DashboardHome = () => {
                         style={{ color: "#1A3D8F" }}
                       >
                         Password Reset
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={handleLogout}
+                        style={{ color: "#1A3D8F" }}
+                      >
+                        Logout
                       </button>
                     </li>
                   </ul>
@@ -402,19 +444,23 @@ const DashboardHome = () => {
               <p className="text-muted">View and manage your debit and credit cards.</p>
             </div>
             <div className="card-body text-center">
-              {cardDetails?.credit || cardDetails?.debit ? (
-                <div className="row">
-                  {cardDetails.credit && (
+              {cardDetails && (cardDetails.credit || cardDetails.debit) ? (
+                <>
+                  
+                  <div className="row">
                     <div className="col-md-6 mb-4">
-                      <CreditCard card={cardDetails.credit} />
+                      <CreditCard
+                        card={cardDetails.credit || cardDetails.debit}
+                        onDelete={() =>
+                          handleDeleteCard(
+                            (cardDetails.credit || cardDetails.debit).id,
+                            (cardDetails.credit || cardDetails.debit).type
+                          )
+                        }
+                      />
                     </div>
-                  )}
-                  {cardDetails.debit && (
-                    <div className="col-md-6 mb-4">
-                      <CreditCard card={cardDetails.debit} />
-                    </div>
-                  )}
-                </div>
+                  </div>
+                </>
               ) : (
                 <div>
                   <p className="text-muted">No credit or debit card added to your account.</p>
@@ -429,7 +475,7 @@ const DashboardHome = () => {
               )}
             </div>
           </div>
-
+          
           {/* Recent Transactions */}
           <div className="card shadow-sm">
             <div className="card-body">
