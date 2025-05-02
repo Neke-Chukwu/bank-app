@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import UserModel from '../models/userModel.js'; 
+import UserModel from '../models/UserModel.js'; 
 import createToken from '../utils/createToken.js'; 
 
 const generateAccountNumber = () =>

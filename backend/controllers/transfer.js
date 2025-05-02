@@ -1,5 +1,5 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
-import UserModel from '../models/userModel.js'; 
+import UserModel from '../models/UserModel.js'; 
 import transferModel from '../models/transferModel.js'; 
 
 // @desc    Initiate a local transfer

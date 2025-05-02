@@ -1,19 +1,53 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import Modal from "../Components/Modal";
-import CreditCard from "../Components/CreditCards"; // Import the updated CreditCard component
+import CreditCard from "../Components/CreditCards";
 
 export default function Cards() {
   const [showModal, setShowModal] = useState(false);
   const [selectedCardType, setSelectedCardType] = useState(null);
   const [selectedCardBrand, setSelectedCardBrand] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cards, setCards] = useState({ credit: null, debit: null }); // Store generated cards
+  const [cards, setCards] = useState({ credit: null, debit: null });
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Load existing cards from localStorage
-    const storedCards = JSON.parse(localStorage.getItem("cards")) || { credit: null, debit: null };
-    setCards(storedCards);
+    const fetchCards = async () => {
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) {
+          setErrorMessage("Please log in to view your cards.");
+          return;
+        }
+
+        const response = await axios.get("http://localhost:5000/api/card/all", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const fetchedCards = response.data.cards.reduce(
+          (acc, card) => ({
+            ...acc,
+            [card.cardType]: {
+              type: card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1),
+              brand: localStorage.getItem(`cardBrand_${card.cardType}`) || "Visa",
+              number: card.cardNumber,
+              expiry: card.expiryDate,
+              holder: card.cardHolderName,
+              cvv: card.cvv,
+              id: card._id,
+            },
+          }),
+          { credit: null, debit: null }
+        );
+
+        setCards(fetchedCards);
+      } catch (error) {
+        console.error("Error fetching cards:", error);
+        setErrorMessage(error.response?.data?.message || "Failed to load cards.");
+      }
+    };
+
+    fetchCards();
   }, []);
 
   const handleApplyForCard = () => {
@@ -23,33 +57,122 @@ export default function Cards() {
     setErrorMessage("");
   };
 
-  const handleCardSelection = (type, brand) => {
+  const handleCardSelection = async (type, brand) => {
     if (cards[type.toLowerCase()]) {
       setErrorMessage(`You can only have one ${type} card.`);
       return;
     }
 
     setIsProcessing(true);
-    setTimeout(() => {
+    setErrorMessage("");
+
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error("Please log in to generate a card.");
+      }
+
+      const response = await axios.post(
+        "http://localhost:5000/api/card/generate",
+        { cardType: type.toLowerCase() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Maintain 4-second loading state
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+
       const newCard = {
         type,
         brand,
-        number: "1234 5678 9012 3456",
-        expiry: "12/28",
-        holder: "Paschal Obunikechukwu",
-        cvv: "123",
+        number: response.data.card.cardNumber,
+        expiry: response.data.card.expiryDate,
+        holder: response.data.card.cardHolderName,
+        cvv: response.data.card.cvv,
+        id: response.data.card._id,
       };
+
+      console.log("New Card:", newCard);
+
       const updatedCards = { ...cards, [type.toLowerCase()]: newCard };
       setCards(updatedCards);
-      localStorage.setItem("cards", JSON.stringify(updatedCards)); // Save cards to localStorage
+      localStorage.setItem(`cardBrand_${type.toLowerCase()}`, brand);
       setIsProcessing(false);
       setShowModal(false);
-    }, 4000); // Simulate 4-second delay
+    } catch (error) {
+      console.error("Error generating card:", error);
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      setIsProcessing(false);
+      setErrorMessage(error.response?.data?.message || "Failed to generate card.");
+    }
+  };
+
+  const handleDeleteCard = async (cardId, cardType) => {
+    setIsProcessing(true);
+    setErrorMessage("");
+
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error("Please log in to delete a card.");
+      }
+
+      await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+
+      const updatedCards = { ...cards, [cardType.toLowerCase()]: null };
+      setCards(updatedCards);
+      localStorage.removeItem(`cardBrand_${cardType.toLowerCase()}`);
+      setIsProcessing(false);
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      setIsProcessing(false);
+      setErrorMessage(error.response?.data?.message || "Failed to delete card.");
+    }
+  };
+
+  const handleClearCards = async () => {
+    setIsProcessing(true);
+    setErrorMessage("");
+
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error("Please log in to clear cards.");
+      }
+
+      const response = await axios.get("http://localhost:5000/api/card/all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      for (const card of response.data.cards) {
+        await axios.delete(`http://localhost:5000/api/card/delete/${card._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+
+      setCards({ credit: null, debit: null });
+      localStorage.removeItem("cardBrand_credit");
+      localStorage.removeItem("cardBrand_debit");
+      setIsProcessing(false);
+    } catch (error) {
+      console.error("Error clearing cards:", error);
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      setIsProcessing(false);
+      setErrorMessage(error.response?.data?.message || "Failed to clear cards.");
+    }
   };
 
   return (
     <div className="container py-5">
-      <h2 className="text-center mb-4" style={{ color: "#1A3D8F" }}>Manage Your Cards</h2>
+      <h2 className="text-center mb-4" style={{ color: "#1A3D8F" }}>
+        Manage Your Cards
+      </h2>
       <div className="bg-light p-4 rounded shadow-sm mb-4">
         <p className="mb-0 text-muted">
           Manage your debit and credit cards with ease. Apply for a new card, view your existing cards, and enjoy secure transactions with our trusted card partners.
@@ -60,12 +183,18 @@ export default function Cards() {
       <div className="row mb-4">
         {cards.credit && (
           <div className="col-md-6 mb-4">
-            <CreditCard card={cards.credit} />
+            <CreditCard
+              card={cards.credit}
+              onDelete={() => handleDeleteCard(cards.credit.id, cards.credit.type)}
+            />
           </div>
         )}
         {cards.debit && (
           <div className="col-md-6 mb-4">
-            <CreditCard card={cards.debit} />
+            <CreditCard
+              card={cards.debit}
+              onDelete={() => handleDeleteCard(cards.debit.id, cards.debit.type)}
+            />
           </div>
         )}
       </div>
@@ -74,34 +203,41 @@ export default function Cards() {
       <div className="text-center">
         <button
           className="btn btn-primary btn-lg"
-          style={{ backgroundColor: "#1A3D8F", borderColor: "#1A3D8F", borderRadius: "5px" }}
+          style={{
+            backgroundColor: "#1A3D8F",
+            borderColor: "#1A3D8F",
+            borderRadius: "5px",
+          }}
           onClick={handleApplyForCard}
         >
           Apply for a Debit/Credit Card
         </button>
       </div>
 
-      <button
-        className="btn btn-danger"
-        onClick={() => {
-         localStorage.removeItem("cards");
-         window.location.reload(); // Refresh the page to reflect changes
-         }}
-        >
+      <button className="btn btn-danger" onClick={handleClearCards}>
         Clear Stored Cards
       </button>
 
       {/* Modal for Card Application */}
       {showModal && (
-        <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Apply for a Card">
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          title="Apply for a Card"
+        >
           {isProcessing ? (
             <div className="text-center">
-              <i className="fas fa-spinner fa-spin text-primary mb-3" style={{ fontSize: "24px" }}></i>
+              <i
+                className="fas fa-spinner fa-spin text-primary mb-3"
+                style={{ fontSize: "24px" }}
+              ></i>
               <p>Processing your card application, please wait...</p>
             </div>
           ) : !selectedCardType ? (
             <>
-              <h5 className="text-center mb-4">What type of card would you like to apply for?</h5>
+              <h5 className="text-center mb-4">
+                What type of card would you like to apply for?
+              </h5>
               <div className="d-flex justify-content-around">
                 <button
                   className="btn btn-outline-primary d-flex flex-column align-items-center"
@@ -163,7 +299,9 @@ export default function Cards() {
               </div>
             </>
           ) : null}
-          {errorMessage && <p className="text-danger text-center mt-3">{errorMessage}</p>}
+          {errorMessage && (
+            <p className="text-danger text-center mt-3">{errorMessage}</p>
+          )}
         </Modal>
       )}
     </div>

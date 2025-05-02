@@ -15,6 +15,7 @@ import connectDB from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import transferRoutes from './routes/transferRoutes.js'; 
 import adminRoutes from './routes/adminRoutes.js';
+import cardRoutes from './routes/cardRoutes.js';
 
 dotenv.config();
 const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'; // Default for development
@@ -36,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/users', userRoutes);
 app.use('/api/transfers', transferRoutes); 
 app.use('/api/admin', adminRoutes); 
+app.use('/api/card', cardRoutes);
 
 
 app.listen(port, () => console.log("server running on port:", port));
