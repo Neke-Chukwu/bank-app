@@ -21,42 +21,59 @@ const TransactionHistoryTable = ({
             <th>Recipient</th>
             <th>Bank</th>
             <th>Amount</th>
-            <th>Currency</th>
+            <th>Transaction Type</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-  {transactions.map((transaction) => (
-    <tr key={transaction._id}>
-      <td>{new Date(transaction.transferDate).toLocaleDateString()}</td>
-      <td>{transaction.recipientName}</td>
-      <td>{transaction.recipientBank || "N/A"}</td>
-      <td>
-        <span
-          className={transaction.amount >= 0 ? "text-success" : "text-danger"}
-        >
-          {transaction.amount >= 0 ? "+" : ""}
-          {(transaction.amount || 0).toLocaleString("en-US", {
-            style: "currency",
-            currency: transaction.currency || "USD",
-          })}
-        </span>
-      </td>
-      <td>{transaction.currency || "USD"}</td>
-      <td>
-        <span
-          className={`badge ${
-            transaction.status === "Approved"
-              ? "bg-success"
-              : "bg-warning text-dark"
-          }`}
-        >
-          {transaction.status}
-        </span>
-      </td>
-    </tr>
-  ))}
-</tbody>
+          {transactions.map((transaction) => (
+            <tr key={transaction._id}>
+              <td>{new Date(transaction.transferDate).toLocaleDateString()}</td>
+              <td>{transaction.recipientName}</td>
+              <td>{transaction.recipientBank || "N/A"}</td>
+              <td>
+                <span
+                  className={
+                    transaction.transactionType === "credit"
+                      ? "text-success"
+                      : "text-danger"
+                  }
+                >
+                  {transaction.transactionType === "credit" ? "+" : "-"}
+                  {(transaction.amount || 0).toLocaleString("en-US", {
+                    style: "currency",
+                    currency: transaction.currency || "USD",
+                  })}
+                </span>
+              </td>
+              <td>
+                <span
+                  style={{
+                    color:
+                      transaction.transactionType === "credit"
+                        ? "#007bff" // Blue for credit
+                        : "#ff6b6b", // Light red/pink for debit
+                    fontWeight: "bold",
+                  }}
+                >
+                  {transaction.transactionType.charAt(0).toUpperCase() +
+                    transaction.transactionType.slice(1) || "N/A"}
+                </span>
+              </td>
+              <td>
+                <span
+                  className={`badge ${
+                    transaction.status === "Approved"
+                      ? "bg-success"
+                      : "bg-warning text-dark"
+                  }`}
+                >
+                  {transaction.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
 
       {showPagination && totalPages > 1 && (

@@ -101,7 +101,8 @@ const DashboardHome = () => {
         if (transactionsResponse.error) {
           console.error("Transactions fetch error:", transactionsResponse.error);
         } else {
-          const transactionsData = transactionsResponse.data?.transactions || transactionsResponse.data || [];
+          const transactionsData = transactionsResponse.data?.transfers || transactionsResponse.data || [];
+          console.log("Transactions data:", transactionsData);
           setTransactions(Array.isArray(transactionsData) ? transactionsData : []);
         }
 
@@ -139,17 +140,11 @@ const DashboardHome = () => {
   const filteredTransactions = useMemo(() => {
     if (!Array.isArray(transactions)) return [];
     return transactions.filter((transaction) => {
-      try {
-        const recipientName = transaction.recipientName?.toString().toLowerCase() || "";
-        const recipientBank = transaction.recipientBank?.toString().toLowerCase() || "";
-        const currency = transaction.currency?.toString().toLowerCase() || "";
-        const query = searchQuery.toLowerCase();
-        return recipientName.includes(query) || recipientBank.includes(query) || currency.includes(query);
-      } catch (error) {
-        console.warn("Error filtering transaction:", transaction, error);
-        return false;
-      }
-    });
+      const recipientName = transaction.recipientName?.toString().toLowerCase() || "";
+      const recipientBank = transaction.recipientBank?.toString().toLowerCase() || "";
+      const query = searchQuery.toLowerCase();
+      return recipientName.includes(query) || recipientBank.includes(query);
+    }).slice(0, 5); // Ensure up to 5 transactions for Recent Transactions
   }, [searchQuery, transactions]);
 
   const totalBalance = accounts.reduce((sum, account) => sum + (account.balance || 0), 0);
@@ -453,13 +448,17 @@ const DashboardHome = () => {
                   />
                 </div>
               </div>
-              <TransactionHistoryTable
-                transactions={filteredTransactions}
-                totalTransactions={filteredTransactions.length}
-                limit={5}
-                currentPage={1}
-                showPagination={false}
-              />
+              {filteredTransactions.length === 0 ? (
+                <p className="text-muted text-center">No recent transactions found.</p>
+              ) : (
+                <TransactionHistoryTable
+                  transactions={filteredTransactions}
+                  totalTransactions={filteredTransactions.length}
+                  limit={5}
+                  currentPage={1}
+                  showPagination={false}
+                />
+              )}
             </div>
             <div className="text-center mt-3">
               <button

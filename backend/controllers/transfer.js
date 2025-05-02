@@ -193,11 +193,11 @@ const payBill = asyncHandler(async (req, res) => {
     res.status(201).json({ message: 'Bill payment initiated', billPayment });
   });
 
-// @desc    Get all transfers for a user
+// @desc    Get all transfers for a user (sent and received)
 // @route   GET /api/transfers
 // @access  Private
 const getAllTransfers = asyncHandler(async (req, res) => {
-    const userId = await UserModel.findById(req.user._id) // Extract userId from the token
+    const userId = req.user._id; // Extract userId from the token
     console.log('Fetching transfers for user:', userId);
 
     if (!userId) {
@@ -218,16 +218,29 @@ const getAllTransfers = asyncHandler(async (req, res) => {
 
     // Pagination logic
     const { page = 1, limit = 10 } = req.query; // Default to page 1, 10 transfers per page
-    const transfers = await transferModel.find({ senderAccount: { $in: accountNumbers } })
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit));
+    const parsedLimit = parseInt(limit);
 
-    const totalTransfers = await transferModel.countDocuments({ senderAccount: { $in: accountNumbers } });
+    // Query for transactions where the user is either sender or recipient
+    const transfers = await transferModel.find({
+        $or: [
+            { senderAccount: { $in: accountNumbers } }, // Sent transactions
+            { recipientAccount: { $in: accountNumbers } }, // Received transactions
+        ],
+    })
+        .sort({ createdAt: -1 }) // Newest first
+        .skip((page - 1) * parsedLimit)
+        .limit(parsedLimit);
+
+    const totalTransfers = await transferModel.countDocuments({
+        $or: [
+            { senderAccount: { $in: accountNumbers } },
+            { recipientAccount: { $in: accountNumbers } },
+        ],
+    });
 
     res.status(200).json({
         transfers,
-        totalPages: Math.ceil(totalTransfers / limit),
+        totalPages: Math.ceil(totalTransfers / parsedLimit),
         currentPage: parseInt(page),
     });
 });
