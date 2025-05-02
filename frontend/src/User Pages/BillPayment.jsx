@@ -13,7 +13,7 @@ const BillPaymentPage = () => {
       {/* Introduction Section */}
       <div className="bg-light p-4 rounded shadow-sm mb-5">
         <p className="mb-4" style={{ color: "#6c757d" }}>
-          Pay your bills securely and efficiently using Lumva Bank. We support payments for utilities, rent, tuition, subscriptions, and more.
+          Pay your bills securely and efficiently using Neon Trust Bank. We support payments for utilities, rent, tuition, subscriptions, and more.
         </p>
 
         <div className="text-center">
