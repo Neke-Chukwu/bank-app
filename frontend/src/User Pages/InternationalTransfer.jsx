@@ -17,7 +17,7 @@ const InternationalTransferPage = () => {
           throw new Error("No token found. Please log in again.");
         }
 
-        const response = await fetch("http://localhost:5000/api/auth/user", {
+        const response = await fetch("http://localhost:5000/api/users/user", {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
           },

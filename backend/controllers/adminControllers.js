@@ -140,4 +140,16 @@ const addFundsToAccount = asyncHandler(async (req, res) => {
     });
   });
 
-export { editUser, deleteUser, suspendUser, addFundsToAccount, getAllUsers };
+const getUserById = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await UserModel.findById(userId).select('-password'); // Exclude password
+  if (!user) {
+    res.status(404).json({ message: 'User not found' });
+    return;
+  }
+
+  res.status(200).json(user);
+});
+
+export { editUser, deleteUser, suspendUser, addFundsToAccount, getAllUsers, getUserById };

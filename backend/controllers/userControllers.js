@@ -67,26 +67,23 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
-  console.log('LOGIN payload:', req.body);
   const { username, email, password } = req.body;
 
-  console.log('Finding user by username or email...');
   const user = await UserModel.findOne({ $or: [{ username }, { email }] });
 
   if (user && (await bcrypt.compare(password, user.password))) {
-    console.log('Login successful. Setting JWT cookie...');
-    // Use the createToken function to generate and set the cookie
-    createToken(res, user._id);
+    // Generate and set the JWT cookie, and get the token string
+    const token = createToken(res, user._id);
 
     res.status(200).json({
       _id: user._id,
       username: user.username,
       email: user.email,
       role: user.role,
+      token: token, // Send the token in the response
       message: 'Login successful',
     });
   } else {
-    console.log('→ 401: invalid credentials');
     res.status(401);
     throw new Error('Invalid username or password');
   }

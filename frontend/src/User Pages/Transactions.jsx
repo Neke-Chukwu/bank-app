@@ -20,7 +20,7 @@ const Transactions = () => {
           throw new Error("No token found. Please log in again.");
         }
 
-        const response = await fetch("http://localhost:5000/api/auth/transfers", {
+        const response = await fetch("http://localhost:5000/api/transfers/transactions", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

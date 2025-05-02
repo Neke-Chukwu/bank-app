@@ -95,7 +95,7 @@ const InternationalTransferForm = ({ onClose }) => {
         throw new Error("No token found. Please log in again.");
       }
 
-      const response = await fetch("http://localhost:5000/api/auth/transfers/international", {
+      const response = await fetch("http://localhost:5000/api/transfers/international", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
