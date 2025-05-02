@@ -1,14 +1,14 @@
 import React from "react";
 
 const TransactionHistoryTable = ({
-  transactions = [], // Default to an empty array if transactions is undefined
+  transactions = [], 
   totalTransactions,
-  limit,
+  limit = 10,
   currentPage,
   onPageChange,
   showPagination = true,
 }) => {
-  console.log("Transactions received in TransactionHistoryTable:", transactions);
+  //console.log("Transactions received in TransactionHistoryTable:", transactions);
 
   const totalPages = Math.ceil(totalTransactions / limit);
 
