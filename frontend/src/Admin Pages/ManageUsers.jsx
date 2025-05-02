@@ -95,7 +95,7 @@ export default function ManageUsers() {
           email: userDataRaw.email || "",
           phone: userDataRaw.phoneNumber || "",
           address: userDataRaw.address || "",
-          status: userDataRaw.status || "active",
+          status: userDataRaw.status === false ? "suspended" : "active",
           idVerified: !!userDataRaw.idDocument,
           idCardFront: userDataRaw.idDocument?.frontUrl || "",
           idCardBack: userDataRaw.idDocument?.backUrl || "",
@@ -155,7 +155,7 @@ export default function ManageUsers() {
         email: userDataRaw.email || "",
         phone: userDataRaw.phoneNumber || "",
         address: userDataRaw.address || "",
-        status: userDataRaw.status || "active",
+        status: userDataRaw.status === false ? "suspended" : "active",
         idVerified: !!userDataRaw.idDocument,
         idCardFront: userDataRaw.idDocument?.frontUrl || "",
         idCardBack: userDataRaw.idDocument?.backUrl || "",
@@ -172,15 +172,17 @@ export default function ManageUsers() {
 
   const confirmStatusChange = async () => {
     try {
-      const newStatus = userData.status === "active" ? "suspended" : "active";
+      // Only allow suspension if the account is active
+      if (userData.status !== "active") {
+        throw new Error("Account is already suspended");
+      }
 
       await makeApiRequest(
         `${API_BASE_URL}/users/suspend/${userId}`,
-        "PUT",
-        { status: newStatus }
+        "PUT"
       );
 
-      setUserData({ ...userData, status: newStatus });
+      setUserData({ ...userData, status: "suspended" });
       setLastStatusUpdate(
         new Date().toLocaleString("en-US", {
           year: "numeric",
@@ -192,6 +194,7 @@ export default function ManageUsers() {
         })
       );
       setShowStatusModal(false);
+      alert("User suspended successfully");
     } catch (error) {
       alert(`Status change failed: ${error.message}`);
     }
@@ -215,7 +218,7 @@ export default function ManageUsers() {
     } catch (error) {
       alert(`Deletion failed: ${error.message}`);
     }
-    navigate("/admin/users");
+    navigate("/admin");
   };
 
   return (
@@ -249,12 +252,11 @@ export default function ManageUsers() {
                     {userData.status.toUpperCase()}
                   </span>
                   <button
-                    className={`btn mt-3 w-100 ${
-                      userData.status === "active" ? "btn-danger" : "btn-success"
-                    }`}
+                    className="btn btn-danger mt-3 w-100"
                     onClick={handleStatusToggle}
+                    disabled={userData.status === "suspended"}
                   >
-                    {userData.status === "active" ? "Suspend Account" : "Activate Account"}
+                    Suspend Account
                   </button>
                   <button
                     className="btn btn-danger mt-3 w-100"
@@ -316,8 +318,7 @@ export default function ManageUsers() {
               title="Confirm Status Change"
             >
               <p>
-                Are you sure you want to{" "}
-                {userData.status === "active" ? "suspend" : "activate"} this account?
+                Are you sure you want to suspend this account?
               </p>
               <div className="d-flex justify-content-end mt-4">
                 <button

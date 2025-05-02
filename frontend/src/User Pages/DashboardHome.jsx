@@ -7,6 +7,7 @@ import PayBillsForm from "../Forms/PayBillsForm";
 import TransactionHistoryTable from "../Components/TransactionHistoryTable";
 import CreditCard from "../Components/CreditCards";
 import axios from "axios";
+import Suspended from "./Suspended";
 
 // Error Boundary Component
 class DashboardErrorBoundary extends React.Component {
@@ -45,6 +46,7 @@ const DashboardHome = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSuspended, setIsSuspended] = useState(false);
 
   const navigate = useNavigate();
 
@@ -86,6 +88,13 @@ const DashboardHome = () => {
           console.warn("Invalid user data:", userResponse.data);
         } else {
           setUsername(userResponse.data.user.username);
+          setIsSuspended(userResponse.data.user.status === false);
+        }
+
+        // Skip further data fetching if user is suspended
+        if (userResponse.data?.user?.status === false) {
+          setLoading(false);
+          return;
         }
 
         // Handle accounts response
@@ -112,9 +121,6 @@ const DashboardHome = () => {
         } else {
           setCardDetails(cardsResponse.data?.cards || null);
         }
-        
-
-
 
         // Only set error if all critical fetches fail
         if (
@@ -161,8 +167,6 @@ const DashboardHome = () => {
       console.error("Error deleting card:", error);
     }
   };
-
-  // Removed undefined 'cardsResponse' reference
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -286,6 +290,10 @@ const DashboardHome = () => {
     "localTransfer": <LocalTransferForm userAccounts={accounts} />,
     "internationalTransfer": <InternationalTransferForm userAccounts={accounts} />,
   };
+
+  if (isSuspended) {
+    return <Suspended />;
+  }
 
   if (loading) {
     return (
@@ -446,7 +454,6 @@ const DashboardHome = () => {
             <div className="card-body text-center">
               {cardDetails && (cardDetails.credit || cardDetails.debit) ? (
                 <>
-                  
                   <div className="row">
                     <div className="col-md-6 mb-4">
                       <CreditCard
@@ -475,7 +482,7 @@ const DashboardHome = () => {
               )}
             </div>
           </div>
-          
+
           {/* Recent Transactions */}
           <div className="card shadow-sm">
             <div className="card-body">

@@ -72,8 +72,8 @@ const suspendUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Add a isSuspended field to your UserModel
-  user.status = 'Suspended'; 
+  // Update the status field to false for suspension
+  user.status = false; 
   await user.save();
 
   res.status(200).json({ message: 'User suspended successfully' });

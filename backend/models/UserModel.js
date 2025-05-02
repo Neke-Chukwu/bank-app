@@ -28,11 +28,7 @@ const userSchema = new Schema(
     accounts: [accountSchema], // Array of accounts
     profileImage: { type: String, default: 'https://via.placeholder.com/150' }, // Profile picture URL
     idDocument: { type: String, default: null }, // URL or path to the uploaded ID document
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'suspended'],
-      default: 'active',
-    },
+    status:{ type: Boolean, default: true }, // true for active, false for suspended
     lastLogin: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
