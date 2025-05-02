@@ -131,10 +131,10 @@ const getCardDetails = asyncHandler(async (req, res) => {
       cvv: card.cvv, // Include CVV
       status: card.status,
     });
-  });
-  
+});
+
   // Get all cards for a user
-  const getCards = asyncHandler(async (req, res) => {
+const getCards = asyncHandler(async (req, res) => {
     const cards = await CardModel.find({ userId: req.user._id });
     res.status(200).json({
       cards: cards.map((card) => ({
@@ -147,7 +147,7 @@ const getCardDetails = asyncHandler(async (req, res) => {
         status: card.status,
       })),
     });
-  });
+});
 
 
 

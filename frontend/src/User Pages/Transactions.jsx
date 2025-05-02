@@ -7,7 +7,7 @@ const Transactions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const transactionsPerPage = 5;
+  const transactionsPerPage = 15;
 
   // Fetch all transactions when the component loads
   useEffect(() => {
