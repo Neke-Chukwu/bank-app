@@ -8,12 +8,6 @@ const InvestmentPage = () => {
 
   const checkingBalance = 5000.0; // Example checking balance
 
-  // Sample recent transactions data
-  const recentTransactions = [
-    { id: 1, date: "2023-03-01", description: "Investment in Mutual Fund", amount: 1000.0 },
-    { id: 2, date: "2023-03-05", description: "Investment in Stocks", amount: 1500.0 },
-    { id: 3, date: "2023-03-10", description: "Dividend Earned", amount: 200.0 },
-  ];
 
   // Define all investment types
   const investmentAccounts = [
@@ -132,29 +126,6 @@ const InvestmentPage = () => {
             <strong>Stay Informed:</strong> Keep up with market trends and news to make informed decisions.
           </li>
         </ul>
-      </div>
-
-      {/* Recent Transactions */}
-      <div className="mt-5">
-        <h4 className="mb-3" style={{ color: "#1A3D8F" }}>Recent Transactions</h4>
-        <table className="table table-striped">
-          <thead>
-            <tr style={{ color: "#1A3D8F" }}>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentTransactions.map((transaction) => (
-              <tr key={transaction.id}>
-                <td>{transaction.date}</td>
-                <td>{transaction.description}</td>
-                <td>${transaction.amount.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {/* Modal for Adding Funds */}

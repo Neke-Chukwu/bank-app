@@ -1,12 +1,24 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);
+
+  const handleLogout = () => {
+    // Clear authentication data
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
+
+    // Redirect to login page
+    navigate("/login");
+  };
 
   const navCategories = [
     {
@@ -62,7 +74,7 @@ const Sidebar = () => {
           top: 0,
           left: 0,
           width: "250px",
-          backgroundColor: "white", // Background color changed to white
+          backgroundColor: "white",
           height: "100vh",
           overflowY: "auto",
           zIndex: 1040,
@@ -95,7 +107,7 @@ const Sidebar = () => {
                       padding: "8px 12px",
                       borderRadius: "4px",
                       transition: "background-color 0.3s ease",
-                      backgroundColor: location.pathname === link.path ? "#E8F0FE" : "transparent", // Subtle background for active link
+                      backgroundColor: location.pathname === link.path ? "#E8F0FE" : "transparent",
                     }}
                   >
                     <i className={`${link.icon} me-2`} style={{ fontSize: "1rem", color: "#1A3D8F" }}></i>
@@ -106,6 +118,19 @@ const Sidebar = () => {
             </ul>
           </div>
         ))}
+
+        {/* Logout Button */}
+        <button
+          className="btn btn-danger w-100 mt-4"
+          onClick={handleLogout}
+          style={{
+            color: "white",
+            borderRadius: "5px",
+            fontWeight: "bold",
+          }}
+        >
+          <i className="fas fa-sign-out-alt me-2"></i> Logout
+        </button>
       </div>
 
       {/* Sidebar for small screens */}
@@ -118,8 +143,8 @@ const Sidebar = () => {
             left: 0,
             width: "250px",
             height: "100vh",
-            backgroundColor: "white", 
-            color: "#1A3D8F", 
+            backgroundColor: "white",
+            color: "#1A3D8F",
             overflowY: "auto",
             zIndex: 1050,
             boxShadow: "2px 0 5px rgba(0, 0, 0, 0.1)",
@@ -136,7 +161,7 @@ const Sidebar = () => {
               onClick={closeSidebar}
               style={{
                 fontSize: "1rem",
-                color: "#1A3D8F", // Close icon color changed to #1A3D8F
+                color: "#1A3D8F",
               }}
             ></button>
           </div>
@@ -156,12 +181,12 @@ const Sidebar = () => {
                         location.pathname === link.path ? "active-link" : ""
                       }`}
                       style={{
-                        color: "#1A3D8F", // Text color changed to #1A3D8F
+                        color: "#1A3D8F",
                         textDecoration: "none",
                         padding: "8px 12px",
                         borderRadius: "4px",
                         transition: "background-color 0.3s ease",
-                        backgroundColor: location.pathname === link.path ? "#E8F0FE" : "transparent", // Subtle background for active link
+                        backgroundColor: location.pathname === link.path ? "#E8F0FE" : "transparent",
                       }}
                     >
                       <i className={`${link.icon} me-2`} style={{ fontSize: "1rem", color: "#1A3D8F" }}></i>
@@ -172,6 +197,19 @@ const Sidebar = () => {
               </ul>
             </div>
           ))}
+
+          {/* Logout Button for Small Screens */}
+          <button
+            className="btn btn-danger w-100 mt-4"
+            onClick={handleLogout}
+            style={{
+              color: "white",
+              borderRadius: "5px",
+              fontWeight: "bold",
+            }}
+          >
+            <i className="fas fa-sign-out-alt me-2"></i> Logout
+          </button>
         </div>
       )}
 

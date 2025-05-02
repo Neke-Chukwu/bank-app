@@ -8,13 +8,6 @@ const SavingsPage = () => {
 
   const checkingBalance = 3500.0;
 
-  // Sample recent transactions data
-  const recentTransactions = [
-    { id: 1, date: "2023-03-01", description: "Transfer to Emergency Fund", amount: 200.0 },
-    { id: 2, date: "2023-03-05", description: "Transfer to Vacation Fund", amount: 150.0 },
-    { id: 3, date: "2023-03-10", description: "Interest Earned", amount: 50.0 },
-  ];
-
   // Define all savings types
   const savingsAccounts = [
     {
@@ -134,28 +127,6 @@ const SavingsPage = () => {
         </ul>
       </div>
 
-      {/* Recent Transactions */}
-      <div className="mt-5">
-        <h4 className="mb-3" style={{ color: "#1A3D8F" }}>Recent Transactions</h4>
-        <table className="table table-striped">
-          <thead>
-            <tr style={{ color: "#1A3D8F" }}>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentTransactions.map((transaction) => (
-              <tr key={transaction.id}>
-                <td>{transaction.date}</td>
-                <td>{transaction.description}</td>
-                <td>${transaction.amount.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
       {/* Modal for Adding Funds */}
       <Modal
