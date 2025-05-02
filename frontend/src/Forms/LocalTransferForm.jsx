@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const LocalTransferForm = ({ onClose, userAccounts }) => {
   const [formData, setFormData] = useState({
@@ -12,16 +13,15 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
     reference: "",
     securityPin: "",
   });
+  const [currentStep, setCurrentStep] = useState(1);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
-  const [currentStep, setCurrentStep] = useState(1); // Tracks the current step of the form
-  const [errors, setErrors] = useState({}); // Tracks validation errors
-  const [isSubmitting, setIsSubmitting] = useState(false); // Tracks loading state
-  const [isSubmitted, setIsSubmitted] = useState(false); // Tracks if the transfer is submitted
-  const [approvalStatus, setApprovalStatus] = useState("Pending"); // Tracks approval status
-
-  // Automatically set the current date and time for transferDate
+  // Set current date for transferDate
   useEffect(() => {
-    const currentDate = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+    const currentDate = new Date().toISOString().slice(0, 10);
     setFormData((prevData) => ({
       ...prevData,
       transferDate: currentDate,
@@ -30,14 +30,19 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Restrict recipientAccount, recipientRouting, and securityPin to digits only
+    if (name === "recipientAccount" || name === "recipientRouting" || name === "securityPin") {
+      if (!/^\d*$/.test(value)) return;
+    }
     setFormData({
       ...formData,
       [name]: value,
     });
     setErrors({
       ...errors,
-      [name]: "", // Clear the error for the field being updated
+      [name]: "",
     });
+    setApiError(null);
   };
 
   const validateStep = () => {
@@ -45,12 +50,19 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
     if (currentStep === 1) {
       if (!formData.recipientName) stepErrors.recipientName = "Recipient's name is required.";
       if (!formData.recipientAccount) stepErrors.recipientAccount = "Recipient's account number is required.";
+      else if (!/^\d{9}$/.test(formData.recipientAccount))
+        stepErrors.recipientAccount = "Account number must be exactly 9 digits.";
       if (!formData.recipientBank) stepErrors.recipientBank = "Recipient's bank name is required.";
       if (!formData.recipientRouting) stepErrors.recipientRouting = "Recipient's routing number is required.";
+      else if (!/^\d{9}$/.test(formData.recipientRouting))
+        stepErrors.recipientRouting = "Routing number must be exactly 9 digits.";
     } else if (currentStep === 2) {
       if (!formData.amount) stepErrors.amount = "Transfer amount is required.";
+      else if (parseFloat(formData.amount) <= 0) stepErrors.amount = "Amount must be greater than 0.";
     } else if (currentStep === 3) {
       if (!formData.securityPin) stepErrors.securityPin = "Security PIN is required.";
+      else if (!/^\d{4}$/.test(formData.securityPin))
+        stepErrors.securityPin = "PIN must be exactly 4 digits.";
     }
     return stepErrors;
   };
@@ -66,79 +78,85 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
 
   const handlePrevious = () => {
     setCurrentStep((prevStep) => prevStep - 1);
+    setApiError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submit button clicked"); // Debugging
-  
+    console.log("Submit button clicked");
+
     const stepErrors = validateStep();
     if (Object.keys(stepErrors).length > 0) {
-      console.log("Validation errors:", stepErrors); // Debugging
+      console.log("Validation errors:", stepErrors);
       setErrors(stepErrors);
       return;
     }
-  
-    setIsSubmitting(true); // Start loading
-  
-    // Debugging: Log userAccounts
-    console.log("User accounts:", userAccounts);
-  
+
+    setIsSubmitting(true);
+    setApiError(null);
+
     // Find the Savings Account
     const savingsAccount =
       userAccounts && userAccounts.length > 0
         ? userAccounts.find((acc) => acc.type === "Savings Account")
         : null;
-  
+
     if (!savingsAccount) {
-      console.log("No Savings Account available."); // Debugging
-      setErrors({ general: "No Savings Account available to debit from." });
+      console.log("No Savings Account available.");
+      setApiError("No Savings Account available to debit from.");
       setIsSubmitting(false);
       return;
     }
-  
-    const transferData = {
-      ...formData,
-      debitedAccount: savingsAccount.number, // Use the Savings Account
+
+    const payload = {
+      recipientName: formData.recipientName,
+      recipientAccount: formData.recipientAccount,
+      recipientBank: formData.recipientBank,
+      recipientRouting: formData.recipientRouting,
+      amount: parseFloat(formData.amount),
+      transferType: formData.transferType,
+      transferDate: formData.transferDate,
+      reference: formData.reference || `LOCAL-${Date.now()}`,
+      debitedAccount: savingsAccount.number,
     };
-  
+
     try {
-      console.log("Sending transfer data to backend:", transferData); // Debugging
-  
-      // Retrieve the token from localStorage
-      const token = localStorage.getItem("token");
+      console.log("Submitting local transfer:", payload);
+
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (!token) {
-        throw new Error("No token found. Please log in again.");
+        throw new Error("No authentication token found. Please log in.");
       }
-  
-      const response = await fetch("http://localhost:5000/api/transfers/local", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
-        },
-        body: JSON.stringify(transferData),
-      });
-  
-      if (!response.ok) {
-        throw new Error("Failed to process transfer.");
-      }
-  
-      console.log("Transfer submitted successfully"); // Debugging
-  
-      // Simulate approval delay
+
+      const response = await axios.post(
+        "http://localhost:5000/api/transfers/local",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("API response:", response.data);
+
+      // Ensure loading state lasts at least 3 seconds
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+
+      // Wait for backend approval simulation (5 seconds from success display)
       setTimeout(() => {
-        setApprovalStatus("Approved");
-        setIsSubmitted(true); // Mark as submitted
-        setTimeout(() => {
-          onClose(); // Close the modal after showing the success message
-        }, 3000); // Show success message for 3 seconds
-      }, 10000); // Approve after 10 seconds
+        onClose();
+      }, 5000);
     } catch (error) {
-      console.error("Error processing transfer:", error);
-      setErrors({ general: error.message });
-    } finally {
-      setIsSubmitting(false); // Stop loading
+      console.error("Error submitting local transfer:", error);
+      // Ensure loading state lasts at least 3 seconds even on error
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setIsSubmitting(false);
+      setApiError(error.response?.data?.message || error.message || "Failed to process transfer.");
     }
   };
 
@@ -183,7 +201,7 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
         >
           <i className="fas fa-check-circle" style={{ fontSize: "4rem", color: "#1A3D8F" }}></i>
           <h4 className="mt-3" style={{ color: "#1A3D8F" }}>
-            Transfer Approved Successfully!
+            Transfer Submitted Successfully!
           </h4>
         </div>
       )}
@@ -191,6 +209,13 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
       {/* Form */}
       {!isSubmitting && !isSubmitted && (
         <form onSubmit={handleSubmit}>
+          {/* API Error */}
+          {apiError && (
+            <div className="alert alert-danger" role="alert">
+              {apiError}
+            </div>
+          )}
+
           {/* Step 1: Recipient's Information */}
           {currentStep === 1 && (
             <div>
@@ -216,6 +241,9 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
                   value={formData.recipientAccount}
                   onChange={handleInputChange}
                   className={`form-control ${errors.recipientAccount ? "is-invalid" : ""}`}
+                  maxLength="9"
+                  minLength="9"
+                  placeholder="Enter 9-digit account number"
                 />
                 {errors.recipientAccount && <div className="invalid-feedback">{errors.recipientAccount}</div>}
               </div>
@@ -240,6 +268,9 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
                   value={formData.recipientRouting}
                   onChange={handleInputChange}
                   className={`form-control ${errors.recipientRouting ? "is-invalid" : ""}`}
+                  maxLength="9"
+                  minLength="9"
+                  placeholder="Enter 9-digit routing number"
                 />
                 {errors.recipientRouting && <div className="invalid-feedback">{errors.recipientRouting}</div>}
               </div>
@@ -261,14 +292,29 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
               <div className="form-group">
                 <label htmlFor="amount">Amount</label>
                 <input
-                  type="text"
+                  type="number"
                   id="amount"
                   name="amount"
                   value={formData.amount}
                   onChange={handleInputChange}
                   className={`form-control ${errors.amount ? "is-invalid" : ""}`}
+                  min="0"
+                  step="0.01"
                 />
                 {errors.amount && <div className="invalid-feedback">{errors.amount}</div>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="transferType">Transfer Type</label>
+                <select
+                  id="transferType"
+                  name="transferType"
+                  value={formData.transferType}
+                  onChange={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="Personal">Personal</option>
+                  <option value="Business">Business</option>
+                </select>
               </div>
               <div className="form-group">
                 <label htmlFor="transferDate">Transfer Date</label>
@@ -279,7 +325,18 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
                   value={formData.transferDate}
                   onChange={handleInputChange}
                   className="form-control"
-                  disabled // Prevent manual editing of the date
+                  disabled
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="reference">Reference (Optional)</label>
+                <input
+                  type="text"
+                  id="reference"
+                  name="reference"
+                  value={formData.reference}
+                  onChange={handleInputChange}
+                  className="form-control"
                 />
               </div>
               <div className="d-flex justify-content-between mt-3">
@@ -316,6 +373,9 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
                   value={formData.securityPin}
                   onChange={handleInputChange}
                   className={`form-control ${errors.securityPin ? "is-invalid" : ""}`}
+                  maxLength="4"
+                  minLength="4"
+                  placeholder="Enter 4-digit PIN"
                 />
                 {errors.securityPin && <div className="invalid-feedback">{errors.securityPin}</div>}
               </div>

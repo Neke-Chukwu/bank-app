@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const InternationalTransferForm = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -15,16 +16,15 @@ const InternationalTransferForm = ({ onClose }) => {
     reference: "",
     securityPin: "",
   });
+  const [currentStep, setCurrentStep] = useState(1);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
-  const [currentStep, setCurrentStep] = useState(1); // Tracks the current step of the form
-  const [errors, setErrors] = useState({}); // Tracks validation errors
-  const [isSubmitting, setIsSubmitting] = useState(false); // Tracks loading state
-  const [isSubmitted, setIsSubmitted] = useState(false); // Tracks if the transfer is submitted
-  const [approvalStatus, setApprovalStatus] = useState(""); // Tracks the approval status
-
-  // Automatically set the current date for transferDate
+  // Set current date for transferDate
   useEffect(() => {
-    const currentDate = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+    const currentDate = new Date().toISOString().slice(0, 10);
     setFormData((prevData) => ({
       ...prevData,
       transferDate: currentDate,
@@ -33,14 +33,27 @@ const InternationalTransferForm = ({ onClose }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Restrict recipientAccount and securityPin to digits only
+    if (name === "recipientAccount" || name === "securityPin") {
+      if (!/^\d*$/.test(value)) return;
+    }
+    // Restrict recipientSwift to alphanumeric
+    if (name === "recipientSwift") {
+      if (!/^[A-Za-z0-9]*$/.test(value)) return;
+    }
+    // Restrict recipientIban to alphanumeric
+    if (name === "recipientIban") {
+      if (!/^[A-Za-z0-9]*$/.test(value)) return;
+    }
     setFormData({
       ...formData,
       [name]: value,
     });
     setErrors({
       ...errors,
-      [name]: "", // Clear the error for the field being updated
+      [name]: "",
     });
+    setApiError(null);
   };
 
   const validateStep = () => {
@@ -48,13 +61,23 @@ const InternationalTransferForm = ({ onClose }) => {
     if (currentStep === 1) {
       if (!formData.recipientName) stepErrors.recipientName = "Recipient's name is required.";
       if (!formData.recipientAccount) stepErrors.recipientAccount = "Recipient's account number is required.";
+      else if (!/^\d{9}$/.test(formData.recipientAccount))
+        stepErrors.recipientAccount = "Account number must be exactly 9 digits.";
       if (!formData.recipientBank) stepErrors.recipientBank = "Recipient's bank name is required.";
       if (!formData.recipientSwift) stepErrors.recipientSwift = "SWIFT/BIC code is required.";
+      else if (!/^[A-Za-z0-9]{8}$|^[A-Za-z0-9]{11}$/.test(formData.recipientSwift))
+        stepErrors.recipientSwift = "SWIFT/BIC code must be 8 or 11 characters.";
+      if (!formData.recipientIban) stepErrors.recipientIban = "IBAN is required.";
+      else if (!/^[A-Za-z0-9]{15,34}$/.test(formData.recipientIban))
+        stepErrors.recipientIban = "IBAN must be 15-34 alphanumeric characters.";
       if (!formData.recipientCountry) stepErrors.recipientCountry = "Recipient's country is required.";
     } else if (currentStep === 2) {
       if (!formData.amount) stepErrors.amount = "Transfer amount is required.";
+      else if (parseFloat(formData.amount) <= 0) stepErrors.amount = "Amount must be greater than 0.";
     } else if (currentStep === 3) {
       if (!formData.securityPin) stepErrors.securityPin = "Security PIN is required.";
+      else if (!/^\d{4}$/.test(formData.securityPin))
+        stepErrors.securityPin = "PIN must be exactly 4 digits.";
     }
     return stepErrors;
   };
@@ -70,6 +93,7 @@ const InternationalTransferForm = ({ onClose }) => {
 
   const handlePrevious = () => {
     setCurrentStep((prevStep) => prevStep - 1);
+    setApiError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -80,49 +104,60 @@ const InternationalTransferForm = ({ onClose }) => {
       return;
     }
 
-    setIsSubmitting(true); // Start loading
-
-    const transferData = {
-      ...formData,
-    };
+    setIsSubmitting(true);
+    setApiError(null);
 
     try {
-      console.log("Sending international transfer data to backend:", transferData); // Debugging
-
-      // Retrieve the token from localStorage
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (!token) {
-        throw new Error("No token found. Please log in again.");
+        throw new Error("No authentication token found. Please log in.");
       }
 
-      const response = await fetch("http://localhost:5000/api/transfers/international", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Include the token in the Authorization header
-        },
-        body: JSON.stringify(transferData),
-      });
+      const payload = {
+        recipientName: formData.recipientName,
+        recipientAccount: formData.recipientAccount,
+        recipientBank: formData.recipientBank,
+        recipientSwift: formData.recipientSwift,
+        recipientIban: formData.recipientIban,
+        recipientCountry: formData.recipientCountry,
+        amount: parseFloat(formData.amount),
+        currency: formData.currency,
+        transferType: formData.transferType,
+        transferDate: formData.transferDate,
+        reference: formData.reference || `INTL-${Date.now()}`,
+      };
 
-      if (!response.ok) {
-        throw new Error("Failed to process international transfer.");
-      }
+      console.log("Submitting international transfer:", payload);
 
-      console.log("International transfer submitted successfully"); // Debugging
+      const response = await axios.post(
+        "http://localhost:5000/api/transfers/international",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      // Simulate approval delay
+      console.log("API response:", response.data);
+
+      // Ensure loading state lasts at least 3 seconds
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+
+      // Wait for backend approval simulation (5 seconds from success display)
       setTimeout(() => {
-        setApprovalStatus("Approved"); // Update approval status
-        setIsSubmitted(true); // Mark as submitted
-        setTimeout(() => {
-          onClose(); // Close the modal after showing the success message
-        }, 3000); // Show success message for 3 seconds
-      }, 5000); // Simulate 5 seconds of loading
+        onClose();
+      }, 5000);
     } catch (error) {
-      console.error("Error processing international transfer:", error);
-      setErrors({ general: error.message });
-    } finally {
-      setIsSubmitting(false); // Stop loading
+      console.error("Error submitting international transfer:", error);
+      // Ensure loading state lasts at least 3 seconds even on error
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      setIsSubmitting(false);
+      setApiError(error.response?.data?.message || error.message || "Failed to process transfer.");
     }
   };
 
@@ -175,6 +210,13 @@ const InternationalTransferForm = ({ onClose }) => {
       {/* Form */}
       {!isSubmitting && !isSubmitted && (
         <form onSubmit={handleSubmit}>
+          {/* API Error */}
+          {apiError && (
+            <div className="alert alert-danger" role="alert">
+              {apiError}
+            </div>
+          )}
+
           {/* Step 1: Recipient's Information */}
           {currentStep === 1 && (
             <div>
@@ -200,6 +242,9 @@ const InternationalTransferForm = ({ onClose }) => {
                   value={formData.recipientAccount}
                   onChange={handleInputChange}
                   className={`form-control ${errors.recipientAccount ? "is-invalid" : ""}`}
+                  maxLength="9"
+                  minLength="9"
+                  placeholder="Enter 9-digit account number"
                 />
                 {errors.recipientAccount && <div className="invalid-feedback">{errors.recipientAccount}</div>}
               </div>
@@ -224,8 +269,26 @@ const InternationalTransferForm = ({ onClose }) => {
                   value={formData.recipientSwift}
                   onChange={handleInputChange}
                   className={`form-control ${errors.recipientSwift ? "is-invalid" : ""}`}
+                  maxLength="11"
+                  minLength="8"
+                  placeholder="Enter 8 or 11-character SWIFT code"
                 />
                 {errors.recipientSwift && <div className="invalid-feedback">{errors.recipientSwift}</div>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="recipientIban">IBAN</label>
+                <input
+                  type="text"
+                  id="recipientIban"
+                  name="recipientIban"
+                  value={formData.recipientIban}
+                  onChange={handleInputChange}
+                  className={`form-control ${errors.recipientIban ? "is-invalid" : ""}`}
+                  maxLength="34"
+                  minLength="15"
+                  placeholder="Enter 15-34 character IBAN"
+                />
+                {errors.recipientIban && <div className="invalid-feedback">{errors.recipientIban}</div>}
               </div>
               <div className="form-group">
                 <label htmlFor="recipientCountry">Recipient's Country</label>
@@ -257,12 +320,14 @@ const InternationalTransferForm = ({ onClose }) => {
               <div className="form-group">
                 <label htmlFor="amount">Amount</label>
                 <input
-                  type="text"
+                  type="number"
                   id="amount"
                   name="amount"
                   value={formData.amount}
                   onChange={handleInputChange}
                   className={`form-control ${errors.amount ? "is-invalid" : ""}`}
+                  min="0"
+                  step="0.01"
                 />
                 {errors.amount && <div className="invalid-feedback">{errors.amount}</div>}
               </div>
@@ -284,6 +349,19 @@ const InternationalTransferForm = ({ onClose }) => {
                 </select>
               </div>
               <div className="form-group">
+                <label htmlFor="transferType">Transfer Type</label>
+                <select
+                  id="transferType"
+                  name="transferType"
+                  value={formData.transferType}
+                  onChange={handleInputChange}
+                  className="form-control"
+                >
+                  <option value="Personal">Personal</option>
+                  <option value="Business">Business</option>
+                </select>
+              </div>
+              <div className="form-group">
                 <label htmlFor="transferDate">Transfer Date</label>
                 <input
                   type="date"
@@ -292,7 +370,18 @@ const InternationalTransferForm = ({ onClose }) => {
                   value={formData.transferDate}
                   onChange={handleInputChange}
                   className="form-control"
-                  disabled // Prevent manual editing of the date
+                  disabled
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="reference">Reference (Optional)</label>
+                <input
+                  type="text"
+                  id="reference"
+                  name="reference"
+                  value={formData.reference}
+                  onChange={handleInputChange}
+                  className="form-control"
                 />
               </div>
               <div className="d-flex justify-content-between mt-3">
@@ -329,6 +418,9 @@ const InternationalTransferForm = ({ onClose }) => {
                   value={formData.securityPin}
                   onChange={handleInputChange}
                   className={`form-control ${errors.securityPin ? "is-invalid" : ""}`}
+                  maxLength="4"
+                  minLength="4"
+                  placeholder="Enter 4-digit PIN"
                 />
                 {errors.securityPin && <div className="invalid-feedback">{errors.securityPin}</div>}
               </div>

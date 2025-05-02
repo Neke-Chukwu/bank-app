@@ -1,2 +1,3 @@
-# bank-app
-a bank project
+# Bank App
+
+A simple banking application project.

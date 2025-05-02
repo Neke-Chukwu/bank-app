@@ -5,24 +5,20 @@ const PayBillsForm = ({ onClose }) => {
   const [formData, setFormData] = useState({
     billerName: "",
     billerAccount: "",
-    recipientBank: "",
     amountDue: "",
-    currency: "USD", // Default currency
     paymentDate: "",
     paymentType: "One-Time",
-    billType: "", // e.g., Utility, Internet
-    reference: "", // Optional reference
     securityPin: "",
   });
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submissionError, setSubmissionError] = useState(null);
+  const [apiError, setApiError] = useState(null);
 
-  // Automatically set the current date for paymentDate
+  // Set current date for paymentDate
   useEffect(() => {
-    const currentDate = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+    const currentDate = new Date().toISOString().slice(0, 10);
     setFormData((prevData) => ({
       ...prevData,
       paymentDate: currentDate,
@@ -31,15 +27,19 @@ const PayBillsForm = ({ onClose }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Restrict billerAccount and securityPin to digits only
+    if (name === "billerAccount" || name === "securityPin") {
+      if (!/^\d*$/.test(value)) return; // Allow only digits
+    }
     setFormData({
       ...formData,
       [name]: value,
     });
     setErrors({
       ...errors,
-      [name]: "", // Clear the error for the field being updated
+      [name]: "",
     });
-    setSubmissionError(null); // Clear submission error on input change
+    setApiError(null);
   };
 
   const validateStep = () => {
@@ -47,15 +47,15 @@ const PayBillsForm = ({ onClose }) => {
     if (currentStep === 1) {
       if (!formData.billerName) stepErrors.billerName = "Biller name is required.";
       if (!formData.billerAccount) stepErrors.billerAccount = "Biller account number is required.";
-      if (!formData.recipientBank) stepErrors.recipientBank = "Biller bank is required.";
-      if (!formData.billType) stepErrors.billType = "Bill type is required.";
+      else if (!/^\d{9}$/.test(formData.billerAccount))
+        stepErrors.billerAccount = "Account number must be exactly 9 digits.";
     } else if (currentStep === 2) {
-      if (!formData.amountDue || formData.amountDue <= 0) {
-        stepErrors.amountDue = "A valid amount is required.";
-      }
-      if (!formData.currency) stepErrors.currency = "Currency is required.";
+      if (!formData.amountDue) stepErrors.amountDue = "Amount due is required.";
+      else if (parseFloat(formData.amountDue) <= 0) stepErrors.amountDue = "Amount must be greater than 0.";
     } else if (currentStep === 3) {
       if (!formData.securityPin) stepErrors.securityPin = "Security PIN is required.";
+      else if (!/^\d{4}$/.test(formData.securityPin))
+        stepErrors.securityPin = "PIN must be exactly 4 digits.";
     }
     return stepErrors;
   };
@@ -71,7 +71,7 @@ const PayBillsForm = ({ onClose }) => {
 
   const handlePrevious = () => {
     setCurrentStep((prevStep) => prevStep - 1);
-    setSubmissionError(null);
+    setApiError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -83,7 +83,7 @@ const PayBillsForm = ({ onClose }) => {
     }
 
     setIsSubmitting(true);
-    setSubmissionError(null);
+    setApiError(null);
 
     try {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -94,15 +94,17 @@ const PayBillsForm = ({ onClose }) => {
       const payload = {
         recipientName: formData.billerName,
         recipientAccount: formData.billerAccount,
-        recipientBank: formData.recipientBank,
+        recipientBank: "Unknown",
         amount: parseFloat(formData.amountDue),
-        currency: formData.currency,
+        currency: "USD",
         transferDate: formData.paymentDate,
-        reference: formData.reference || `Bill Payment - ${formData.billerName}`,
-        billType: formData.billType,
+        reference: `BILL-${Date.now()}`,
+        billType: formData.paymentType,
       };
 
-      await axios.post(
+      console.log("Submitting bill payment:", payload);
+
+      const response = await axios.post(
         "http://localhost:5000/api/transfers/payBill",
         payload,
         {
@@ -113,160 +115,108 @@ const PayBillsForm = ({ onClose }) => {
         }
       );
 
-      // Backend simulates approval after 5 seconds
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      console.log("API response:", response.data);
+
+      // Ensure loading state lasts at least 3 seconds
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       setIsSubmitting(false);
       setIsSubmitted(true);
 
-      // Close modal after showing success message for 3 seconds
+      // Wait for backend approval simulation (5 seconds from success display)
       setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 5000);
     } catch (error) {
+      console.error("Error submitting bill payment:", error);
+      // Ensure loading state lasts at least 3 seconds even on error
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       setIsSubmitting(false);
-      setSubmissionError(
-        error.response?.data?.message || error.message || "Failed to process payment."
-      );
+      setApiError(error.response?.data?.message || error.message || "Failed to process payment.");
     }
   };
 
   return (
-    <div className="container">
+    <div className="container p-4">
       {/* Loading State */}
       {isSubmitting && (
-        <div className="card shadow-sm p-4 mb-4 text-center">
+        <div className="text-center">
           <div className="spinner-border text-primary mb-3" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <h5>Processing Payment...</h5>
+          <p className="h6">Processing Payment...</p>
         </div>
       )}
 
       {/* Success Message */}
       {isSubmitted && (
-        <div className="card shadow-sm p-4 mb-4 text-center">
+        <div className="text-center">
           <i className="fas fa-check-circle fa-3x text-success mb-3"></i>
-          <h5>Payment Submitted Successfully!</h5>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {submissionError && !isSubmitting && !isSubmitted && (
-        <div className="alert alert-danger mb-4" role="alert">
-          {submissionError}
+          <p className="h6">Payment Submitted Successfully!</p>
         </div>
       )}
 
       {/* Form */}
       {!isSubmitting && !isSubmitted && (
-        <div className="card shadow-sm p-4">
+        <form onSubmit={handleSubmit}>
+          {/* API Error */}
+          {apiError && (
+            <div className="alert alert-danger" role="alert">
+              {apiError}
+            </div>
+          )}
+
+          {/* Step 1: Biller Information */}
           {currentStep === 1 && (
             <div>
-              <h5 className="mb-4">Biller Information</h5>
+              <h6 className="mb-4">Biller Information</h6>
               <div className="mb-3">
                 <label className="form-label">Biller Name</label>
                 <input
                   type="text"
-                  className={`form-control ${errors.billerName ? "is-invalid" : ""}`}
+                  className="form-control"
                   name="billerName"
                   value={formData.billerName}
                   onChange={handleInputChange}
-                  placeholder="Enter biller name"
                 />
-                {errors.billerName && (
-                  <div className="invalid-feedback">{errors.billerName}</div>
-                )}
+                {errors.billerName && <div className="text-danger">{errors.billerName}</div>}
               </div>
               <div className="mb-3">
                 <label className="form-label">Account Number</label>
                 <input
                   type="text"
-                  className={`form-control ${errors.billerAccount ? "is-invalid" : ""}`}
+                  className="form-control"
                   name="billerAccount"
                   value={formData.billerAccount}
                   onChange={handleInputChange}
-                  placeholder="Enter biller account number"
+                  maxLength="9"
+                  minLength="9"
+                  placeholder="Enter 9-digit account number"
                 />
-                {errors.billerAccount && (
-                  <div className="invalid-feedback">{errors.billerAccount}</div>
-                )}
+                {errors.billerAccount && <div className="text-danger">{errors.billerAccount}</div>}
               </div>
-              <div className="mb-3">
-                <label className="form-label">Biller Bank</label>
-                <input
-                  type="text"
-                  className={`form-control ${errors.recipientBank ? "is-invalid" : ""}`}
-                  name="recipientBank"
-                  value={formData.recipientBank}
-                  onChange={handleInputChange}
-                  placeholder="Enter biller bank"
-                />
-                {errors.recipientBank && (
-                  <div className="invalid-feedback">{errors.recipientBank}</div>
-                )}
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Bill Type</label>
-                <select
-                  className={`form-select ${errors.billType ? "is-invalid" : ""}`}
-                  name="billType"
-                  value={formData.billType}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select bill type</option>
-                  <option value="Utility">Utility</option>
-                  <option value="Internet">Internet</option>
-                  <option value="Phone">Phone</option>
-                  <option value="Other">Other</option>
-                </select>
-                {errors.billType && (
-                  <div className="invalid-feedback">{errors.billType}</div>
-                )}
-              </div>
-              <button className="btn btn-primary w-100" onClick={handleNext}>
+              <button type="button" className="btn btn-primary w-100" onClick={handleNext}>
                 Next
               </button>
             </div>
           )}
 
+          {/* Step 2: Payment Details */}
           {currentStep === 2 && (
             <div>
-              <h5 className="mb-4">Payment Details</h5>
+              <h6 className="mb-4">Payment Details</h6>
               <div className="mb-3">
                 <label className="form-label">Amount Due</label>
-                <div className="input-group">
-                  <span className="input-group-text">$</span>
-                  <input
-                    type="number"
-                    className={`form-control ${errors.amountDue ? "is-invalid" : ""}`}
-                    name="amountDue"
-                    value={formData.amountDue}
-                    onChange={handleInputChange}
-                    placeholder="Enter amount"
-                    min="0"
-                    step="0.01"
-                  />
-                  {errors.amountDue && (
-                    <div className="invalid-feedback">{errors.amountDue}</div>
-                  )}
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Currency</label>
-                <select
-                  className={`form-select ${errors.currency ? "is-invalid" : ""}`}
-                  name="currency"
-                  value={formData.currency}
+                <input
+                  type="number"
+                  className="form-control"
+                  name="amountDue"
+                  value={formData.amountDue}
                   onChange={handleInputChange}
-                >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                </select>
-                {errors.currency && (
-                  <div className="invalid-feedback">{errors.currency}</div>
-                )}
+                  min="0"
+                  step="0.01"
+                />
+                {errors.amountDue && <div className="text-danger">{errors.amountDue}</div>}
               </div>
               <div className="mb-3">
                 <label className="form-label">Payment Date</label>
@@ -276,7 +226,7 @@ const PayBillsForm = ({ onClose }) => {
                   name="paymentDate"
                   value={formData.paymentDate}
                   onChange={handleInputChange}
-                  disabled
+                  readOnly
                 />
               </div>
               <div className="mb-3">
@@ -291,60 +241,46 @@ const PayBillsForm = ({ onClose }) => {
                   <option value="Recurring">Recurring</option>
                 </select>
               </div>
-              <div className="mb-3">
-                <label className="form-label">Reference (Optional)</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="reference"
-                  value={formData.reference}
-                  onChange={handleInputChange}
-                  placeholder="Enter reference"
-                />
-              </div>
               <div className="d-flex justify-content-between">
-                <button className="btn btn-secondary" onClick={handlePrevious}>
+                <button type="button" className="btn btn-secondary" onClick={handlePrevious}>
                   Previous
                 </button>
-                <button className="btn btn-primary" onClick={handleNext}>
+                <button type="button" className="btn btn-primary" onClick={handleNext}>
                   Next
                 </button>
               </div>
             </div>
           )}
 
+          {/* Step 3: Security Verification */}
           {currentStep === 3 && (
             <div>
-              <h5 className="mb-4">Security Verification</h5>
+              <h6 className="mb-4">Security Verification</h6>
               <div className="mb-3">
                 <label className="form-label">Security PIN</label>
                 <input
                   type="password"
-                  className={`form-control ${errors.securityPin ? "is-invalid" : ""}`}
+                  className="form-control"
                   name="securityPin"
                   value={formData.securityPin}
                   onChange={handleInputChange}
-                  placeholder="Enter your PIN"
+                  maxLength="4"
+                  minLength="4"
+                  placeholder="Enter 4-digit PIN"
                 />
-                {errors.securityPin && (
-                  <div className="invalid-feedback">{errors.securityPin}</div>
-                )}
+                {errors.securityPin && <div className="text-danger">{errors.securityPin}</div>}
               </div>
               <div className="d-flex justify-content-between">
-                <button className="btn btn-secondary" onClick={handlePrevious}>
+                <button type="button" className="btn btn-secondary" onClick={handlePrevious}>
                   Previous
                 </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                >
+                <button type="submit" className="btn btn-primary">
                   Confirm Payment
                 </button>
               </div>
             </div>
           )}
-        </div>
+        </form>
       )}
     </div>
   );
