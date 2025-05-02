@@ -215,6 +215,7 @@ export default function ManageUsers() {
     } catch (error) {
       alert(`Deletion failed: ${error.message}`);
     }
+    navigate("/admin/users");
   };
 
   return (
