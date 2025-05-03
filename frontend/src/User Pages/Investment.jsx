@@ -1,114 +1,49 @@
-import React, { useState } from "react";
-import Modal from "../Components/Modal";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const InvestmentPage = () => {
-  const [isTransferModalOpen, setTransferModalOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState(null);
-  const [transferAmount, setTransferAmount] = useState("");
+  const [investmentAccount, setInvestmentAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const checkingBalance = 5000.0; // Example checking balance
+  useEffect(() => {
+    const fetchInvestmentAccount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://localhost:5000/api/accounts/investment", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setInvestmentAccount(response.data);
+            } catch (err) {
+        console.error(err); // Log the error to the console
+        setError("Failed to fetch investment account data.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchInvestmentAccount();
+  }, []);
 
-  // Define all investment types
-  const investmentAccounts = [
-    {
-      id: 1,
-      type: "Mutual Fund",
-      number: "****5678",
-      balance: 10000.0,
-    },
-    {
-      id: 2,
-      type: "Stocks",
-      number: "****1234",
-      balance: 15000.0,
-    },
-    {
-      id: 3,
-      type: "Investment Account",
-      number: "****7890",
-      balance: 25000.0, // This should equal the sum of all investment types
-    },
-  ];
-
-  // Calculate total investments from all funds
-  const totalInvestments = investmentAccounts
-    .filter((account) => account.type !== "Investment Account")
-    .reduce((sum, account) => sum + account.balance, 0);
-
-  // Ensure the investment account balance matches the total investments
-  const mainInvestmentAccount = investmentAccounts.find(
-    (account) => account.type === "Investment Account"
-  );
-  if (mainInvestmentAccount) {
-    mainInvestmentAccount.balance = totalInvestments;
-  }
-
-  const handleTransferClick = (account) => {
-    setSelectedAccount(account);
-    setTransferAmount("");
-    setTransferModalOpen(true);
-  };
-
-  const handleTransferSubmit = (e) => {
-    e.preventDefault();
-    console.log(`Transferred $${transferAmount} to ${selectedAccount.type}`);
-    setTransferModalOpen(false);
-  };
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-danger">{error}</div>;
 
   return (
     <div className="container py-4">
-      {/* Total Investment Overview */}
       <h2 className="mb-4" style={{ color: "#1A3D8F" }}>Your Investment Overview</h2>
-      <div className="mb-4 p-3 rounded shadow-sm" style={{ backgroundColor: "#f8f9fa" }}>
-        <h5 className="mb-2" style={{ color: "#1A3D8F" }}>Total Investment Balance</h5>
-        <p className="h4 fw-bold" style={{ color: "#1A3D8F" }}>
-          ${totalInvestments.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      <div className="card p-3 shadow-sm border-0 account-card" style={{ borderRadius: "10px", backgroundColor: "#1A3D8F", color: "white" }}>
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h5 className="h6 fw-bold">{investmentAccount.type}</h5>
+          <small>{investmentAccount.number}</small>
+        </div>
+        <p className="h5 fw-bold">
+          $
+          {investmentAccount.balance.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </p>
       </div>
-
-      {/* Investment Breakdown */}
-      <h4 className="mb-3" style={{ color: "#1A3D8F" }}>Investment Breakdown</h4>
-      <div className="row">
-        {investmentAccounts
-          .filter((account) => account.type !== "Investment Account")
-          .map((account) => (
-            <div key={account.id} className="col-md-6 mb-4">
-              <div
-                className="card p-3 shadow-sm border-0 account-card"
-                style={{
-                  borderRadius: "10px",
-                  backgroundColor: "#1A3D8F",
-                  color: "white",
-                }}
-              >
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <h5 className="h6 fw-bold">{account.type}</h5>
-                  <small>{account.number}</small>
-                </div>
-                <p className="h5 fw-bold">
-                  $
-                  {account.balance.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
-                <div className="d-flex gap-2 mt-3">
-                  <button
-                    className="btn btn-outline-light btn-sm rounded-pill"
-                    onClick={() => handleTransferClick(account)}
-                  >
-                    Add Funds
-                  </button>
-                  <button className="btn btn-outline-light btn-sm rounded-pill">
-                    Details
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-      </div>
-
       {/* Investment Tips */}
       <div className="mt-5">
         <h4 className="mb-3" style={{ color: "#1A3D8F" }}>Investment Tips</h4>
@@ -127,46 +62,6 @@ const InvestmentPage = () => {
           </li>
         </ul>
       </div>
-
-      {/* Modal for Adding Funds */}
-      <Modal
-        isOpen={isTransferModalOpen}
-        onClose={() => setTransferModalOpen(false)}
-        title={`Transfer to ${selectedAccount?.type}`}
-      >
-        <form onSubmit={handleTransferSubmit}>
-          <div className="mb-3">
-            <label className="form-label" style={{ color: "#1A3D8F" }}>
-              Amount to Transfer
-            </label>
-            <input
-              type="number"
-              className="form-control"
-              placeholder="e.g. 200.00"
-              value={transferAmount}
-              onChange={(e) => setTransferAmount(e.target.value)}
-              min="0"
-              max={checkingBalance}
-              step="0.01"
-              required
-            />
-            <div className="form-text" style={{ color: "#6c757d" }}>
-              Available from checking: ${checkingBalance.toFixed(2)}
-            </div>
-          </div>
-          <button
-            type="submit"
-            className="btn w-100"
-            style={{
-              backgroundColor: "#1A3D8F",
-              color: "white",
-              borderRadius: "5px",
-            }}
-          >
-            Transfer Funds
-          </button>
-        </form>
-      </Modal>
     </div>
   );
 };

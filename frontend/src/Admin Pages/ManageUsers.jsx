@@ -252,11 +252,12 @@ export default function ManageUsers() {
                     {userData.status.toUpperCase()}
                   </span>
                   <button
-                    className="btn btn-danger mt-3 w-100"
-                    onClick={handleStatusToggle}
-                    disabled={userData.status === "suspended"}
+                   className={`btn mt-3 w-100 ${
+                     userData.status === "active" ? "btn-danger" : "btn-success"
+                   }`}
+                   onClick={handleStatusToggle}
                   >
-                    Suspend Account
+                   {userData.status === "active" ? "Suspend Account" : "Activate Account"}
                   </button>
                   <button
                     className="btn btn-danger mt-3 w-100"
