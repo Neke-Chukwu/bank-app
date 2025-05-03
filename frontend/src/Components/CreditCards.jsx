@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const CreditCard = ({ card }) => {
+const CreditCard = ({ card, onDelete }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showNumber, setShowNumber] = useState(false);
 
@@ -51,7 +51,7 @@ const CreditCard = ({ card }) => {
             <i className={`${cardIconClasses[card.brand]} fa-2x`} />
           </div>
           <div className="card-number">
-            {showNumber ? card.number : "**** **** **** 3456"}
+            {showNumber ? card.number : "**** **** **** ****"}
           </div>
           <div className="credit-card-footer text-start">
             <div>
@@ -94,6 +94,12 @@ const CreditCard = ({ card }) => {
           onClick={() => setIsFlipped((prev) => !prev)}
         >
           {isFlipped ? "Show Front" : "Flip Card"}
+        </button>
+        <button
+          className="btn btn-danger btn-sm"
+          onClick={onDelete}
+        >
+          <i className="fas fa-trash-alt me-1"></i> Delete Card
         </button>
       </div>
     </div>

@@ -109,62 +109,27 @@ export default function Cards() {
   const handleDeleteCard = async (cardId, cardType) => {
     setIsProcessing(true);
     setErrorMessage("");
-
+  
     try {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (!token) {
         throw new Error("Please log in to delete a card.");
       }
-
+  
       await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-
-      const updatedCards = { ...cards, [cardType.toLowerCase()]: null };
-      setCards(updatedCards);
-      localStorage.removeItem(`cardBrand_${cardType.toLowerCase()}`);
-      setIsProcessing(false);
+  
+      // Update the local state to remove the deleted card
+      setCards((prevCards) => ({
+        ...prevCards,
+        [cardType.toLowerCase()]: null,
+      }));
     } catch (error) {
       console.error("Error deleting card:", error);
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-      setIsProcessing(false);
       setErrorMessage(error.response?.data?.message || "Failed to delete card.");
-    }
-  };
-
-  const handleClearCards = async () => {
-    setIsProcessing(true);
-    setErrorMessage("");
-
-    try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      if (!token) {
-        throw new Error("Please log in to clear cards.");
-      }
-
-      const response = await axios.get("http://localhost:5000/api/card/all", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      for (const card of response.data.cards) {
-        await axios.delete(`http://localhost:5000/api/card/delete/${card._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-
-      setCards({ credit: null, debit: null });
-      localStorage.removeItem("cardBrand_credit");
-      localStorage.removeItem("cardBrand_debit");
+    } finally {
       setIsProcessing(false);
-    } catch (error) {
-      console.error("Error clearing cards:", error);
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-      setIsProcessing(false);
-      setErrorMessage(error.response?.data?.message || "Failed to clear cards.");
     }
   };
 
@@ -213,10 +178,6 @@ export default function Cards() {
           Apply for a Debit/Credit Card
         </button>
       </div>
-
-      <button className="btn btn-danger" onClick={handleClearCards}>
-        Clear Stored Cards
-      </button>
 
       {/* Modal for Card Application */}
       {showModal && (
