@@ -27,6 +27,7 @@ export default function ManageUsers() {
     phone: "",
     address: "",
     status: "active",
+    role: "user",
     idVerified: true,
     idCardFront: "",
     idCardBack: "",
@@ -58,7 +59,7 @@ export default function ManageUsers() {
         body: data ? JSON.stringify(data) : null,
       });
 
-      console.log("Raw API Response:", { status: response.status, ok: response.ok }); // Debug raw response
+      console.log("Raw API Response:", { status: response.status, ok: response.ok });
       const responseData = await response.json();
       console.log("Parsed API Response:", responseData);
       if (!response.ok) {
@@ -83,7 +84,7 @@ export default function ManageUsers() {
           `${API_BASE_URL}/users/${userId}`,
           "GET"
         );
-        console.log("Raw User Data:", userResponse.data || userResponse); // Debug raw data
+        console.log("Raw User Data:", userResponse.data || userResponse);
         // Handle cases where response might not have 'data' property
         const userDataRaw = userResponse.data || userResponse;
         if (!userDataRaw || typeof userDataRaw !== "object") {
@@ -96,12 +97,13 @@ export default function ManageUsers() {
           phone: userDataRaw.phoneNumber || "",
           address: userDataRaw.address || "",
           status: userDataRaw.status === false ? "suspended" : "active",
+          role: userDataRaw.role || "user",
           idVerified: !!userDataRaw.idDocument,
           idCardFront: userDataRaw.idDocument?.frontUrl || "",
           idCardBack: userDataRaw.idDocument?.backUrl || "",
         };
         setUserData(userDataWithStatus);
-        console.log("Updated userData:", userDataWithStatus); // Debug state update
+        console.log("Updated userData:", userDataWithStatus);
       } catch (err) {
         setError(`Failed to fetch user data: ${err.message}`);
       } finally {
@@ -116,6 +118,17 @@ export default function ManageUsers() {
       setLoading(false);
     }
   }, [userId]);
+
+  // Initialize Bootstrap tooltips
+  useEffect(() => {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(
+      (tooltipTriggerEl) => new window.bootstrap.Tooltip(tooltipTriggerEl)
+    );
+    return () => {
+      tooltipList.forEach((tooltip) => tooltip.dispose());
+    };
+  }, []);
 
   // Handle deposit
   const handleDeposit = async () => {
@@ -156,6 +169,7 @@ export default function ManageUsers() {
         phone: userDataRaw.phoneNumber || "",
         address: userDataRaw.address || "",
         status: userDataRaw.status === false ? "suspended" : "active",
+        role: userDataRaw.role || "user",
         idVerified: !!userDataRaw.idDocument,
         idCardFront: userDataRaw.idDocument?.frontUrl || "",
         idCardBack: userDataRaw.idDocument?.backUrl || "",
@@ -167,22 +181,22 @@ export default function ManageUsers() {
 
   // Handle status change
   const handleStatusToggle = () => {
+    if (userData.role === "admin") {
+      return; // Prevent modal from opening for admins
+    }
     setShowStatusModal(true);
   };
 
   const confirmStatusChange = async () => {
     try {
-      // Only allow suspension if the account is active
-      if (userData.status !== "active") {
-        throw new Error("Account is already suspended");
-      }
+      const isSuspending = userData.status === "active";
+      const endpoint = isSuspending 
+        ? `${API_BASE_URL}/users/suspend/${userId}` 
+        : `${API_BASE_URL}/users/unsuspend/${userId}`;
 
-      await makeApiRequest(
-        `${API_BASE_URL}/users/suspend/${userId}`,
-        "PUT"
-      );
+      await makeApiRequest(endpoint, "PUT");
 
-      setUserData({ ...userData, status: "suspended" });
+      setUserData({ ...userData, status: isSuspending ? "suspended" : "active" });
       setLastStatusUpdate(
         new Date().toLocaleString("en-US", {
           year: "numeric",
@@ -194,7 +208,7 @@ export default function ManageUsers() {
         })
       );
       setShowStatusModal(false);
-      alert("User suspended successfully");
+      alert(`User ${isSuspending ? "suspended" : "unsuspended"} successfully`);
     } catch (error) {
       alert(`Status change failed: ${error.message}`);
     }
@@ -224,8 +238,16 @@ export default function ManageUsers() {
   return (
     <div className="container py-5">
       {/* Header */}
-      <header className="mb-4">
-        <h1 className="text-primary">Admin Dashboard</h1>
+      <header className="mb-4 d-flex align-items-center">
+        <button
+          className="btn btn-primary me-3"
+          style={{ backgroundColor: brandColor, borderColor: brandColor }}
+          onClick={() => navigate("/admin")}
+          title="Back to Admin Dashboard"
+        >
+          <i className="fas fa-arrow-left me-2"></i> Back
+        </button>
+        <h1 className="text-primary mb-0">Admin Dashboard</h1>
       </header>
 
       {loading ? (
@@ -252,12 +274,16 @@ export default function ManageUsers() {
                     {userData.status.toUpperCase()}
                   </span>
                   <button
-                   className={`btn mt-3 w-100 ${
-                     userData.status === "active" ? "btn-danger" : "btn-success"
-                   }`}
-                   onClick={handleStatusToggle}
+                    className={`btn mt-3 w-100 ${
+                      userData.status === "active" ? "btn-danger" : "btn-success"
+                    }`}
+                    onClick={handleStatusToggle}
+                    disabled={userData.role === "admin"}
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title={userData.role === "admin" ? "Admins cannot be suspended" : ""}
                   >
-                   {userData.status === "active" ? "Suspend Account" : "Activate Account"}
+                    {userData.status === "active" ? "Suspend Account" : "Unsuspend Account"}
                   </button>
                   <button
                     className="btn btn-danger mt-3 w-100"
@@ -319,7 +345,7 @@ export default function ManageUsers() {
               title="Confirm Status Change"
             >
               <p>
-                Are you sure you want to suspend this account?
+                Are you sure you want to {userData.status === "active" ? "suspend" : "unsuspend"} this account?
               </p>
               <div className="d-flex justify-content-end mt-4">
                 <button

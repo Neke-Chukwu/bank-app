@@ -23,7 +23,7 @@ const ProfilePage = () => {
         }
   
         console.log('Fetching profile data...');
-        const response = await axios.get('http://localhost:5000/api/auth/user', {
+        const response = await axios.get('http://localhost:5000/api/users/user', {
           headers: { Authorization: `Bearer ${token}` },
         });
   
@@ -77,7 +77,7 @@ const ProfilePage = () => {
         <div className="row g-4">
           <div className="col-md-4 text-center">
             <img
-              src={profile.profileImage || 'https://via.placeholder.com/150'}
+              src={profile.profileImage || '../../frontend/public/Profile.png'}
               alt="Profile"
               className="img-fluid rounded-circle"
               style={{ width: '150px', height: '150px', objectFit: 'cover' }}

@@ -6,7 +6,9 @@ import {registerUser,
     logoutUser,
     getUserProfile,
     getUserAccounts,
-    getUserData
+    getUserData,
+    getSavingsAccounts,
+    getInvestmentAccounts
 } from '../controllers/userControllers.js';
 
 const router = express.Router();
@@ -17,6 +19,8 @@ router.route("/login").post(loginUser);
 router.route("/profile/:_id").get(authenticate, getUserProfile); 
 router.route("/logout").post(logoutUser);
 router.route("/accounts").get(authenticate, getUserAccounts);
+router.route("/accounts/savings").get(authenticate, getSavingsAccounts);
+router.route("/accounts/investment").get(authenticate, getInvestmentAccounts);
 router.route("/user").get(authenticate, getUserData); 
 
 

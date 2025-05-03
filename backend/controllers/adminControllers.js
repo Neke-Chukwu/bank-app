@@ -79,6 +79,26 @@ const suspendUser = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'User suspended successfully' });
 });
 
+// @desc    unSuspend user by ID
+// @route   PUT /api/admin/users/unsuspend/:id
+// @access  Private (Admin only)
+const unSuspendUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await UserModel.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Update the status field to false for suspension
+  user.status = true; 
+  await user.save();
+
+  res.status(200).json({ message: 'User unsuspended successfully' });
+});
+
 // @desc    Add funds to a user's account by ID
 // @route   PUT /api/admin/users/:userId/accounts/fund
 // @access  Private (Admin only)
@@ -152,4 +172,4 @@ const getUserById = asyncHandler(async (req, res) => {
   res.status(200).json(user);
 });
 
-export { editUser, deleteUser, suspendUser, addFundsToAccount, getAllUsers, getUserById };
+export { editUser, deleteUser, suspendUser, unSuspendUser, addFundsToAccount, getAllUsers, getUserById };

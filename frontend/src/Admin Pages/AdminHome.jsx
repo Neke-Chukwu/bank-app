@@ -9,7 +9,7 @@ const AdminHome = () => {
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [error, setError] = useState(null);
 
-    // Fetch all users except admins
+    // Fetch all users
     const fetchUsers = useCallback(async () => {
         try {
             const token = localStorage.getItem("token");
@@ -26,7 +26,7 @@ const AdminHome = () => {
 
             const data = await response.json();
             console.log("Fetched Users:", data);
-            // Assuming data is an array based on console log
+            // Ensure data is an array
             setUsers(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -42,14 +42,15 @@ const AdminHome = () => {
 
     // Filtered Users
     const filteredUsers = (Array.isArray(users) ? users : []).filter((user) => {
-        const userId = user._id || user.id || ""; // Handle both _id and id
+        const userId = user._id || user.id || "";
         const matchesSearch =
             (user.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             (user.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             userId.toLowerCase().includes(searchQuery.toLowerCase());
+        const userStatus = user.status === false ? "suspended" : "active";
         const matchesStatus =
             statusFilter === "All" ||
-            (user.status || "").toLowerCase() === statusFilter.toLowerCase();
+            userStatus.toLowerCase() === statusFilter.toLowerCase();
         return matchesSearch && matchesStatus;
     });
 
@@ -112,7 +113,7 @@ const AdminHome = () => {
                                     >
                                         <option value="All">Status: All</option>
                                         <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
+                                        <option value="suspended">Suspended</option>
                                     </select>
                                 </div>
                                 <div className="md:w-1/4">
@@ -140,35 +141,41 @@ const AdminHome = () => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {filteredUsers.length > 0 ? (
-                                            filteredUsers.map((user) => (
-                                                <tr key={user._id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 text-sm text-gray-900">{user._id}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-900">{user.username}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-500">{user.email}</td>
-                                                    <td className="px-4 py-3">
-                                                        <span
-                                                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.status === "active"
-                                                                ? "bg-green-100 text-green-800"
-                                                                : "bg-red-100 text-red-800"
-                                                                }`}
-                                                        >
-                                                            {user.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className={`px-4 py-3 text-sm  ${user.role === 'admin' ? 'admin-role' : 'user-role'}`}>{user.role}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-500">
-                                                        {new Date(user.createdAt).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <button
-                                                            className="view-user-button px-3 py-1 text-sm text-white  rounded-md  text-xs"
-                                                            onClick={() => handleViewUser(user._id)}
-                                                        >
-                                                            View User
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            filteredUsers.map((user) => {
+                                                const displayStatus = user.status === false ? "Suspended" : "Active";
+                                                return (
+                                                    <tr key={user._id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-3 text-sm text-gray-900">{user._id}</td>
+                                                        <td className="px-4 py-3 text-sm text-gray-900">{user.username}</td>
+                                                        <td className="px-4 py-3 text-sm text-gray-500">{user.email}</td>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            <span
+                                                                className={
+                                                                    displayStatus === "Active"
+                                                                        ? "text-blue-800"
+                                                                        : "text-red-800"
+                                                                }
+                                                            >
+                                                                {displayStatus}
+                                                            </span>
+                                                        </td>
+                                                        <td className={`px-4 py-3 text-sm ${user.role === "admin" ? "admin-role" : "user-role"}`}>
+                                                            {user.role}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                                            {new Date(user.createdAt).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <button
+                                                                className="view-user-button px-3 py-1 text-sm text-white rounded-md text-xs"
+                                                                onClick={() => handleViewUser(user._id)}
+                                                            >
+                                                                View User
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         ) : (
                                             <tr>
                                                 <td colSpan={7} className="px-4 py-3 text-center text-gray-500">
@@ -183,44 +190,29 @@ const AdminHome = () => {
                     )}
                 </section>
             </div>
-            <style jsx global>{`
+            <style>{`
                 .view-user-button {
-                  background-color: #3b82f6; /* Tailwind's blue-500 */
-                  color: white;
-                  font-weight: 600; /* Tailwind's font-semibold */
-                  border-radius: 0.375rem; /* Tailwind's rounded-md */
-                  padding-left: 0.75rem; /* Tailwind's px-3 */
-                  padding-right: 0.75rem;
-                  padding-top: 0.25rem; /* Tailwind's py-1 */
-                  padding-bottom: 0.25rem;
-                  transition: background-color 0.3s ease; /* Smooth transition */
-                }
-                .view-user-button:hover {
-                    background-color: #2563eb; /* Tailwind's blue-700 on hover */
+                    background-color: #3b82f6; /* Tailwind's blue-500 */
+                    color: white;
+                    font-weight: 600; /* Tailwind's font-semibold */
+                    border-radius: 0.375rem; /* Tailwind's rounded-md */
+                    padding-left: 0.75rem; /* Tailwind's px-3 */
+                    padding-right: 0.75rem;
+                    padding-top: 0.25rem; /* Tailwind's py-1 */
+                    padding-bottom: 0.25rem;
+                    transition: background-color 0.3s ease; /* Smooth transition */
                 }
 
                 .admin-role {
-                    background-color: #f87171; /* Tailwind's red-400 */
-                    color: white;
-                    padding: 0.25rem 0.5rem;
-                    border-radius: 0.375rem;
-                }
-                .admin-role:hover {
-                      background-color: #ef4444; /* Tailwind's red-600 */
+                    color: #16a34a; /* Tailwind's green-500 */
                 }
 
-                .user-role{
-                    background-color: #16a34a; /* Tailwind's green-500 */
-                    color: white;
-                    padding: 0.25rem 0.5rem;
-                    border-radius: 0.375rem;
+                .user-role {
+                    color: #16a34a; /* Tailwind's green-500 */
                 }
 
-                .user-role:hover {
-                    background-color: #15803d; /* Tailwind's green-700 */
-                }
                 .table tr:hover {
-                  background-color: #f9fafb;
+                    background-color: #f9fafb;
                 }
             `}</style>
         </div>

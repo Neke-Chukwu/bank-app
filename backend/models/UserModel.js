@@ -26,7 +26,7 @@ const userSchema = new Schema(
     accountNumber: { type: String, unique: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     accounts: [accountSchema], // Array of accounts
-    profileImage: { type: String, default: 'https://via.placeholder.com/150' }, // Profile picture URL
+    profileImage: { type: String, default: '../../frontend/public/Profile.png' }, // Profile picture URL
     idDocument: { type: String, default: null }, // URL or path to the uploaded ID document
     status:{ type: Boolean, default: true }, // true for active, false for suspended
     lastLogin: { type: Date },

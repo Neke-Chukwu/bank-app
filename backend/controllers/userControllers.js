@@ -178,4 +178,53 @@ const getUserData = async (req, res) => {
   }
 };
 
-export { registerUser, loginUser, logoutUser, getUserProfile, getUserAccounts, getUserData };
+// @desc    Get savings accounts
+// @route   GET /api/users/accounts/savings
+// @access  Private
+const getSavingsAccounts = asyncHandler(async (req, res) => {
+  const userId = req.user._id; // Access user ID from req.user
+
+  const user = await UserModel.findById(userId).select('accounts');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Filter savings accounts from the user's accounts
+  const savingsAccounts = user.accounts.filter(
+    (account) => account.type === 'Savings Account'
+  );
+
+  if (savingsAccounts.length === 0) {
+    return res.status(404).json({ message: 'No savings accounts found' });
+  }
+
+  res.status(200).json(savingsAccounts);
+});
+
+//@desc  Get investment accounts
+//@route  GET /api/users/accounts/investment
+//@access  Private
+const getInvestmentAccounts = asyncHandler(async (req, res) => {
+  const userId = req.user._id; // Access user ID from req.user
+
+  const user = await UserModel.findById(userId).select('accounts');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Filter investment accounts from the user's accounts
+  const investmentAccounts = user.accounts.filter(
+    (account) => account.type === 'Investment Account'
+  );
+
+  if (investmentAccounts.length === 0) {
+    return res.status(404).json({ message: 'No investment accounts found' });
+  }
+
+  res.status(200).json(investmentAccounts);
+});
+
+
+export { registerUser, loginUser, logoutUser, getUserProfile, getUserAccounts, getUserData, getSavingsAccounts, getInvestmentAccounts };
