@@ -5,7 +5,7 @@ import Modal from "../Components/Modal";
 
 export default function ManageUsers() {
   const brandColor = "#1A3D8F";
-  const API_BASE_URL = "http://localhost:5000/api/admin";
+  const API_BASE_URL = "https://api.neontrust.us/api/admin";
   const { userId: paramUserId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();

@@ -26,6 +26,7 @@ const Services = () => {
                   style={{
                     height: "200px",
                     backgroundImage: `url('/personal_banking.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
@@ -61,6 +62,7 @@ const Services = () => {
                   style={{
                     height: "200px",
                     backgroundImage: `url('/business_banking.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
@@ -96,6 +98,7 @@ const Services = () => {
                   style={{
                     height: "200px",
                     backgroundImage: `url('/wealth_management.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
@@ -131,6 +134,7 @@ const Services = () => {
                   style={{
                     height: "200px",
                     backgroundImage: `url('/digital_banking.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundPosition: "center",
                     backgroundSize: "cover",
                   }}
@@ -166,6 +170,7 @@ const Services = () => {
                   style={{
                     height: "200px",
                     backgroundImage: `url('/loans_mortgages.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
@@ -201,6 +206,7 @@ const Services = () => {
                   style={{
                     height: "200px",
                     backgroundImage: `url('/Insurance_services.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}

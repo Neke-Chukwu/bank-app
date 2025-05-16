@@ -157,6 +157,7 @@ const Home = () => {
                   style={{
                     height: '200px',
                     backgroundImage: `url('/personal_banking.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
@@ -176,6 +177,7 @@ const Home = () => {
                   style={{
                     height: '200px',
                     backgroundImage: `url('/business_banking.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
@@ -195,6 +197,7 @@ const Home = () => {
                   style={{
                     height: '200px',
                     backgroundImage: `url('/wealth_management.png')`,
+                    backgroundColor: '#f8f9fa', // Fallback color
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}

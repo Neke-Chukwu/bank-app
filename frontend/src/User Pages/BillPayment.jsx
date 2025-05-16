@@ -1,9 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "../Components/Modal";
 import PayBillsForm from "../Forms/PayBillsForm";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import Suspended from "./Suspended";
 
 const BillPaymentPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Check suspension status
+        const userResponse = await axios.get("https://api.neontrust.us/api/users/user", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (userResponse.data?.user?.status === false) {
+          setIsSuspended(true);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to fetch user data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
+  if (isSuspended) {
+    return <Suspended />;
+  }
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className="container py-5">

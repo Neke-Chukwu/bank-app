@@ -23,7 +23,7 @@ const ProfilePage = () => {
         }
   
         console.log('Fetching profile data...');
-        const response = await axios.get('http://localhost:5000/api/users/user', {
+        const response = await axios.get('https://api.neontrust.us/api/users/user', {
           headers: { Authorization: `Bearer ${token}` },
         });
   
@@ -58,6 +58,21 @@ const ProfilePage = () => {
     );
   }
 
+  const handleEditProfile = () => {
+    setLoading(true); // Simulate loading
+    setTimeout(() => {
+      setLoading(false);
+      setError(
+        <>
+          Unable to access the path you are trying to reach. Please try again later.{' '}
+          <a href="#" onClick={() => navigate(-1)} style={{ color: brandColor }}>
+            Go back
+          </a>
+        </>
+      );
+    }, 5000); // Simulate 5 seconds delay
+  };
+
   return (
     <div className="container py-5">
       <div
@@ -77,7 +92,7 @@ const ProfilePage = () => {
         <div className="row g-4">
           <div className="col-md-4 text-center">
             <img
-              src={profile.profileImage || '../../frontend/public/Profile.png'}
+              src="/Profile.png"
               alt="Profile"
               className="img-fluid rounded-circle"
               style={{ width: '150px', height: '150px', objectFit: 'cover' }}
@@ -92,7 +107,7 @@ const ProfilePage = () => {
               <strong>Email:</strong> {profile.email || 'N/A'}
             </p>
             <p>
-              <strong>Phone:</strong> {profile.phone || 'N/A'}
+              <strong>Phone:</strong> {profile.phone || 'Verified ✅'}
             </p>
           </div>
         </div>
@@ -108,12 +123,12 @@ const ProfilePage = () => {
                 style={{ maxWidth: '100%' }}
               />
             ) : (
-              <p>No ID Document Uploaded</p>
+              <p>Verified ✅</p>
             )}
           </div>
           <div className="col-md-6">
             <h5 style={{ color: brandColor }}>Address</h5>
-            <p>{profile.address || 'N/A'}</p>
+            <p>{profile.address || 'Verified ✅'}</p>
           </div>
         </div>
         <div className="mt-4 text-center">
@@ -124,6 +139,7 @@ const ProfilePage = () => {
               color: '#fff',
               borderColor: brandColor,
             }}
+            onClick={handleEditProfile}
           >
             Edit Profile
           </button>

@@ -7,6 +7,7 @@
     "scripts": {
       "backend": "nodemon backend/index.js",
       "frontend": "cd frontend && pnpm run dev",
+      "build": "vite build",
       "dev": "concurrently \"pnpm run backend\" \"pnpm run frontend\""
     },
     "keywords": [],

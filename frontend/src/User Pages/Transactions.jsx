@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import TransactionHistoryTable from "../Components/TransactionHistoryTable";
+import Suspended from "./Suspended";
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]); // Store all transactions
@@ -7,9 +8,10 @@ const Transactions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSuspended, setIsSuspended] = useState(false); // Suspension state
   const transactionsPerPage = 15;
 
-  // Fetch all transactions when the component loads
+  // Fetch all transactions and check suspension status when the component loads
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
@@ -20,7 +22,26 @@ const Transactions = () => {
           throw new Error("No token found. Please log in again.");
         }
 
-        const response = await fetch("http://localhost:5000/api/transfers/transactions", {
+        // Check suspension status
+        const userResponse = await fetch("https://api.neontrust.us/api/users/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch user data.");
+        }
+
+        const userData = await userResponse.json();
+        if (userData.user?.status === false) {
+          setIsSuspended(true);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch transactions
+        const response = await fetch("https://api.neontrust.us/api/transfers/transactions", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -71,6 +92,10 @@ const Transactions = () => {
   // Add a console.log here to debug filtered transactions
   console.log("Filtered transactions:", filteredTransactions);
 
+  if (isSuspended) {
+    return <Suspended />;
+  }
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -78,6 +103,7 @@ const Transactions = () => {
   if (error) {
     return <div>Error: {error}</div>;
   }
+
 
   return (
     <div className="container py-5">

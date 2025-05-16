@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import Suspended from "./Suspended";
 import Modal from "../Components/Modal";
 import CreditCard from "../Components/CreditCards";
 
@@ -10,6 +12,34 @@ export default function Cards() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [cards, setCards] = useState({ credit: null, debit: null });
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSuspended, setIsSuspended] = useState(false);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSuspensionStatus = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const userResponse = await axios.get("https://api.neontrust.us/api/users/user", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (userResponse.data?.user?.status === false) {
+          setIsSuspended(true);
+        }
+      } catch (err) {
+        console.error("Failed to check suspension status.", err);
+      }
+    };
+
+    checkSuspensionStatus();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -20,7 +50,7 @@ export default function Cards() {
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/card/all", {
+        const response = await axios.get("https://api.neontrust.us/api/card/all", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -47,8 +77,14 @@ export default function Cards() {
       }
     };
 
-    fetchCards();
-  }, []);
+    if (!isSuspended) {
+      fetchCards();
+    }
+  }, [isSuspended]);
+
+  if (isSuspended) {
+    return <Suspended />;
+  }
 
   const handleApplyForCard = () => {
     setShowModal(true);
@@ -73,13 +109,10 @@ export default function Cards() {
       }
 
       const response = await axios.post(
-        "http://localhost:5000/api/card/generate",
+        "https://api.neontrust.us/api/card/generate",
         { cardType: type.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Maintain 4-second loading state
-      await new Promise((resolve) => setTimeout(resolve, 4000));
 
       const newCard = {
         type,
@@ -91,8 +124,6 @@ export default function Cards() {
         id: response.data.card._id,
       };
 
-      console.log("New Card:", newCard);
-
       const updatedCards = { ...cards, [type.toLowerCase()]: newCard };
       setCards(updatedCards);
       localStorage.setItem(`cardBrand_${type.toLowerCase()}`, brand);
@@ -100,7 +131,6 @@ export default function Cards() {
       setShowModal(false);
     } catch (error) {
       console.error("Error generating card:", error);
-      await new Promise((resolve) => setTimeout(resolve, 4000));
       setIsProcessing(false);
       setErrorMessage(error.response?.data?.message || "Failed to generate card.");
     }
@@ -109,18 +139,17 @@ export default function Cards() {
   const handleDeleteCard = async (cardId, cardType) => {
     setIsProcessing(true);
     setErrorMessage("");
-  
+
     try {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (!token) {
         throw new Error("Please log in to delete a card.");
       }
-  
-      await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
+
+      await axios.delete(`https://api.neontrust.us/api/card/delete/${cardId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
-      // Update the local state to remove the deleted card
+
       setCards((prevCards) => ({
         ...prevCards,
         [cardType.toLowerCase()]: null,
@@ -132,6 +161,7 @@ export default function Cards() {
       setIsProcessing(false);
     }
   };
+
 
   return (
     <div className="container py-5">

@@ -67,16 +67,16 @@ const DashboardHome = () => {
         setError(null);
 
         const [userResponse, accountsResponse, transactionsResponse, cardsResponse] = await Promise.all([
-          axios.get("http://localhost:5000/api/users/user", {
+          axios.get("https://api.neontrust.us/api/users/user", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("http://localhost:5000/api/users/accounts", {
+          axios.get("https://api.neontrust.us/api/users/accounts", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("http://localhost:5000/api/transfers/transactions", {
+          axios.get("https://api.neontrust.us/api/transfers/transactions", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("http://localhost:5000/api/card/all", {
+          axios.get("https://api.neontrust.us/api/card/all", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
         ]);
@@ -153,7 +153,7 @@ const DashboardHome = () => {
         throw new Error("Please log in to delete a card.");
       }
 
-      await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
+      await axios.delete(`https://api.neontrust.us/api/card/delete/${cardId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -199,7 +199,7 @@ const DashboardHome = () => {
               className="p-3 rounded-4 shadow-sm text-center bg-light"
               role="button"
               style={{ width: "140px" }}
-              onClick={() => setActiveModal("localTransfer")}
+              onClick={() => setActiveModal("Local Bank Transfer")}
             >
               <i className="fas fa-money-bill-transfer fs-2 mb-2" style={{ color: "#1A3D8F" }}></i>
               <div className="fw-medium">Local</div>
@@ -208,7 +208,7 @@ const DashboardHome = () => {
               className="p-3 rounded-4 shadow-sm text-center bg-light"
               role="button"
               style={{ width: "140px" }}
-              onClick={() => setActiveModal("internationalTransfer")}
+              onClick={() => setActiveModal("International Bank Transfer")}
             >
               <i className="fas fa-globe-africa fs-2 mb-2" style={{ color: "#1A3D8F" }}></i>
               <div className="fw-medium">International</div>
@@ -287,8 +287,8 @@ const DashboardHome = () => {
         </a>
       </div>
     ),
-    "localTransfer": <LocalTransferForm userAccounts={accounts} />,
-    "internationalTransfer": <InternationalTransferForm userAccounts={accounts} />,
+    "Local Bank Transfer": <LocalTransferForm userAccounts={accounts} />,
+    "International Bank Transfer": <InternationalTransferForm userAccounts={accounts} />,
   };
 
   if (isSuspended) {

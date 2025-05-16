@@ -21,7 +21,7 @@ const PendingApprovalsTable = ({ approvals, setApprovals }) => {
 
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/loans/${selectedApproval.id}/${modalAction.toLowerCase()}`,
+        `https://api.neontrust.us/api/loans/${selectedApproval.id}/${modalAction.toLowerCase()}`,
         {
           method: "PUT",
           headers: {

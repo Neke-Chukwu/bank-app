@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../Components/Modal";
+import Suspended from "./Suspended";
 import InternationalTransferForm from "../Forms/InternationalTransferForm";
 
 const InternationalTransferPage = () => {
@@ -7,8 +8,8 @@ const InternationalTransferPage = () => {
   const [userAccounts, setUserAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSuspended, setIsSuspended] = useState(false);
 
-  // Fetch user accounts when the page loads
   useEffect(() => {
     const fetchUserAccounts = async () => {
       try {
@@ -17,18 +18,26 @@ const InternationalTransferPage = () => {
           throw new Error("No token found. Please log in again.");
         }
 
-        const response = await fetch("http://localhost:5000/api/users/user", {
+        // Check suspension status
+        const userResponse = await fetch("https://api.neontrust.us/api/users/user", {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
           },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch user accounts.");
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch user data.");
         }
 
-        const data = await response.json();
-        setUserAccounts(data.user.accounts); // Set the accounts from the response
+        const userData = await userResponse.json();
+        if (userData.user?.status === false) {
+          setIsSuspended(true);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch user accounts
+        setUserAccounts(userData.user.accounts); // Set the accounts from the response
         setLoading(false);
       } catch (err) {
         console.error("Error fetching user accounts:", err);
@@ -40,6 +49,10 @@ const InternationalTransferPage = () => {
     fetchUserAccounts();
   }, []);
 
+  if (isSuspended) {
+    return <Suspended />;
+  }
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -47,6 +60,7 @@ const InternationalTransferPage = () => {
   if (error) {
     return <div>Error: {error}</div>;
   }
+
 
   return (
     <div className="container py-5">

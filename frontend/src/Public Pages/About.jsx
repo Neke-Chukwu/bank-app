@@ -22,6 +22,7 @@ const AboutPage = () => {
                 <img
                   src="/bank_hq.png"
                   alt="Neon Trust Bank Headquarters"
+                  loading="lazy"
                   className="img-fluid"
                 />
               </div>

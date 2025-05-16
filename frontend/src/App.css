@@ -250,3 +250,31 @@ footer a {
   font-size: 0.8rem;
   color: #bbb;
 }
+
+.not-found-page {
+  text-align: center;
+  font-family: "Arial", sans-serif;
+}
+
+.not-found-page h1 {
+  font-size: 6rem;
+  font-weight: bold;
+  color: #1A3D8F;
+}
+
+.not-found-page h2 {
+  color: #6c757d;
+}
+
+.not-found-page a {
+  background-color: #1A3D8F;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 1.2rem;
+}
+
+.not-found-page a:hover {
+  background-color: #154c9c;
+}

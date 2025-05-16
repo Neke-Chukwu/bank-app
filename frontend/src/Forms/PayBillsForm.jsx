@@ -105,7 +105,7 @@ const PayBillsForm = ({ onClose }) => {
       console.log("Submitting bill payment:", payload);
 
       const response = await axios.post(
-        "http://localhost:5000/api/transfers/payBill",
+        "https://api.neontrust.us/api/transfers/payBill",
         payload,
         {
           headers: {
@@ -195,7 +195,7 @@ const PayBillsForm = ({ onClose }) => {
                 />
                 {errors.billerAccount && <div className="text-danger">{errors.billerAccount}</div>}
               </div>
-              <button type="button" className="btn btn-primary w-100" onClick={handleNext}>
+              <button type="button" className="btn w-100" style={{ backgroundColor: "#1A3D8F", color: "white" }} onClick={handleNext}>
                 Next
               </button>
             </div>
@@ -245,7 +245,7 @@ const PayBillsForm = ({ onClose }) => {
                 <button type="button" className="btn btn-secondary" onClick={handlePrevious}>
                   Previous
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleNext}>
+                <button type="button" className="btn" style={{ backgroundColor: "#1A3D8F", color: "white" }} onClick={handleNext}>
                   Next
                 </button>
               </div>
@@ -274,7 +274,7 @@ const PayBillsForm = ({ onClose }) => {
                 <button type="button" className="btn btn-secondary" onClick={handlePrevious}>
                   Previous
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn" style={{ backgroundColor: "#1A3D8F", color: "white" }}>
                   Confirm Payment
                 </button>
               </div>

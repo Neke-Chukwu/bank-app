@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import Suspended from "./Suspended";
 import Modal from "../Components/Modal";
 
 const DepositPage = () => {
@@ -7,6 +10,56 @@ const DepositPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [expectedDate, setExpectedDate] = useState("");
   const [copiedField, setCopiedField] = useState("");
+
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const userResponse = await axios.get("https://api.neontrust.us/api/users/user", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (userResponse.data?.user?.status === false) {
+          setIsSuspended(true);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to fetch user data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
+  if (isSuspended) {
+    return <Suspended />;
+  }
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   const handleCopy = async (label, value) => {
     try {

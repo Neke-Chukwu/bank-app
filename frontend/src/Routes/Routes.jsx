@@ -28,6 +28,7 @@ import AdminHome from '../Admin Pages/AdminHome';
 import ManageUsers from '../Admin Pages/ManageUsers';
 import AuthProtect from './AuthProtect';
 import ScrollToTop from '../Components/ScrollToTop';
+import NotFound from "../Public Pages/NotFound";
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -87,8 +88,8 @@ const AppRoutes = () => {
           <Route path="manage-users/:id" element={<ManageUsers />} />
         </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 Not Found Page */}
+      <Route path="*" element={<NotFound />} />
       </Routes>
       {!hideNav && <Footer />}
     </>

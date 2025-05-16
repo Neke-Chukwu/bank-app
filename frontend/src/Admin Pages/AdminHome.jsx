@@ -13,7 +13,7 @@ const AdminHome = () => {
     const fetchUsers = useCallback(async () => {
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:5000/api/admin/users", {
+            const response = await fetch("https://api.neontrust.us/api/admin/users", {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
