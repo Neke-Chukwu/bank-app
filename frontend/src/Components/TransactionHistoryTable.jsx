@@ -17,9 +17,10 @@ const TransactionHistoryTable = ({
       <table className="table table-striped">
         <thead>
           <tr>
-            <th>Date</th>
+            <th>Date/Time</th>
             <th>Recipient</th>
             <th>Bank</th>
+            <th>Description</th>
             <th>Amount</th>
             <th>Transaction Type</th>
             <th>Status</th>
@@ -63,7 +64,7 @@ const TransactionHistoryTable = ({
               <td>
                 <span
                   className={`badge ${
-                    transaction.status === "Approved"
+                    transaction.status === "Completed"
                       ? "bg-success"
                       : "bg-warning text-dark"
                   }`}
