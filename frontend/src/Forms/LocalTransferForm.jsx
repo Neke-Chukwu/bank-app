@@ -129,7 +129,7 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
       }
 
       const response = await axios.post(
-        "https://api.neontrust.us/api/transfers/local",
+        "http://localhost:5000/api/transfers/local",
         payload,
         {
           headers: {

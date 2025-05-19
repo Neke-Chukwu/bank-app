@@ -26,7 +26,7 @@ export default function Cards() {
       }
 
       try {
-        const userResponse = await axios.get("https://api.neontrust.us/api/users/user", {
+        const userResponse = await axios.get("http://localhost:5000/api/users/user", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -50,7 +50,7 @@ export default function Cards() {
           return;
         }
 
-        const response = await axios.get("https://api.neontrust.us/api/card/all", {
+        const response = await axios.get("http://localhost:5000/api/card/all", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -109,7 +109,7 @@ export default function Cards() {
       }
 
       const response = await axios.post(
-        "https://api.neontrust.us/api/card/generate",
+        "http://localhost:5000/api/card/generate",
         { cardType: type.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -146,7 +146,7 @@ export default function Cards() {
         throw new Error("Please log in to delete a card.");
       }
 
-      await axios.delete(`https://api.neontrust.us/api/card/delete/${cardId}`, {
+      await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

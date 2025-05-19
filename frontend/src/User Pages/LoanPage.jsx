@@ -25,7 +25,7 @@ const LoansPage = () => {
         setError(null);
 
         // Check suspension status
-        const userResponse = await axios.get("https://api.neontrust.us/api/users/user", {
+        const userResponse = await axios.get("http://localhost:5000/api/users/user", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

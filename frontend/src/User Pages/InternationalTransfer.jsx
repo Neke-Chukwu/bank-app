@@ -19,7 +19,7 @@ const InternationalTransferPage = () => {
         }
 
         // Check suspension status
-        const userResponse = await fetch("https://api.neontrust.us/api/users/user", {
+        const userResponse = await fetch("http://localhost:5000/api/users/user", {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header
           },

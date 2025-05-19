@@ -26,7 +26,7 @@ const InvestmentPage = () => {
         setError(null);
 
         // Check user suspension status
-        const userResponse = await axios.get("https://api.neontrust.us/api/users/user", {
+        const userResponse = await axios.get("http://localhost:5000/api/users/user", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -37,7 +37,7 @@ const InvestmentPage = () => {
         }
 
         // Fetch investment account data
-        const investmentResponse = await axios.get("https://api.neontrust.us/api/users/accounts/investment", {
+        const investmentResponse = await axios.get("http://localhost:5000/api/users/accounts/investment", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

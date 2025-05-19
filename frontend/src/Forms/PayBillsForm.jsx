@@ -105,7 +105,7 @@ const PayBillsForm = ({ onClose }) => {
       console.log("Submitting bill payment:", payload);
 
       const response = await axios.post(
-        "https://api.neontrust.us/api/transfers/payBill",
+        "http://localhost:5000/api/transfers/payBill",
         payload,
         {
           headers: {

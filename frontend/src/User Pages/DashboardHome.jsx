@@ -67,16 +67,16 @@ const DashboardHome = () => {
         setError(null);
 
         const [userResponse, accountsResponse, transactionsResponse, cardsResponse] = await Promise.all([
-          axios.get("https://api.neontrust.us/api/users/user", {
+          axios.get("http://localhost:5000/api/users/user", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("https://api.neontrust.us/api/users/accounts", {
+          axios.get("http://localhost:5000/api/users/accounts", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("https://api.neontrust.us/api/transfers/transactions", {
+          axios.get("http://localhost:5000/api/transfers/transactions", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
-          axios.get("https://api.neontrust.us/api/card/all", {
+          axios.get("http://localhost:5000/api/card/all", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(err => ({ error: err })),
         ]);
@@ -153,7 +153,7 @@ const DashboardHome = () => {
         throw new Error("Please log in to delete a card.");
       }
 
-      await axios.delete(`https://api.neontrust.us/api/card/delete/${cardId}`, {
+      await axios.delete(`http://localhost:5000/api/card/delete/${cardId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -23,7 +23,7 @@ const ProfilePage = () => {
         }
   
         console.log('Fetching profile data...');
-        const response = await axios.get('https://api.neontrust.us/api/users/user', {
+        const response = await axios.get('http://localhost:5000/api/users/user', {
           headers: { Authorization: `Bearer ${token}` },
         });
   

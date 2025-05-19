@@ -130,7 +130,7 @@ const InternationalTransferForm = ({ onClose }) => {
       console.log("Submitting international transfer:", payload);
 
       const response = await axios.post(
-        "https://api.neontrust.us/api/transfers/international",
+        "http://localhost:5000/api/transfers/international",
         payload,
         {
           headers: {

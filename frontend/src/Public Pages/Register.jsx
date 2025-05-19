@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import RegistrationForm from '../Forms/RegistrationForm';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'https://api.neontrust.us/api/users/register'; 
+const API_URL = 'http://localhost:5000/api/users/register'; 
 
 const Register = () => {
   const [message, setMessage] = useState('');

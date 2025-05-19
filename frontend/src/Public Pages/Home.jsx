@@ -267,7 +267,7 @@ const Home = () => {
                           JD
                         </div>
                         <div className="ms-3">
-                          <h6 className="mb-0">John Doe</h6>
+                          <h6 className="mb-0">Teddy Green</h6>
                           <small className="text-muted">Personal Banking Customer</small>
                         </div>
                       </div>
@@ -292,7 +292,7 @@ const Home = () => {
                           JS
                         </div>
                         <div className="ms-3">
-                          <h6 className="mb-0">Jane Smith</h6>
+                          <h6 className="mb-0">Annie Smith</h6>
                           <small className="text-muted">Business Banking Customer</small>
                         </div>
                       </div>
@@ -317,7 +317,7 @@ const Home = () => {
                           RJ
                         </div>
                         <div className="ms-3">
-                          <h6 className="mb-0">Robert Johnson</h6>
+                          <h6 className="mb-0">Robert McJohnson</h6>
                           <small className="text-muted">Wealth Management Client</small>
                         </div>
                       </div>

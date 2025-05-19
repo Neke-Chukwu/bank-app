@@ -8,7 +8,7 @@ const PasswordReset = () => {
   const handlePasswordReset = async (formData) => {
     try {
       // Replace with your backend API endpoint
-      const response = await fetch('https://api.neontrust.us/api/auth/reset-password', {
+      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
