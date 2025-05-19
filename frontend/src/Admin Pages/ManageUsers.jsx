@@ -50,7 +50,7 @@ export default function ManageUsers() {
   };
 
   // Generic API request handler
-  const makeApiRequest = async (url, method, data = null) => {
+  const makeApiRequest = React.useCallback(async (url, method, data = null) => {
     try {
       const headers = {
         "Content-Type": "application/json",
@@ -74,7 +74,7 @@ export default function ManageUsers() {
       console.error("API Request Error:", error);
       throw error;
     }
-  };
+  }, []);
 
   // Fetch user data
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function ManageUsers() {
       setError("No user ID provided");
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, makeApiRequest]);
 
   // Initialize Bootstrap tooltips
   useEffect(() => {
