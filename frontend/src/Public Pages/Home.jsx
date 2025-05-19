@@ -140,7 +140,7 @@ const Home = () => {
             </div>
           </section>
 
-                {/* Services Preview */}
+    {/* Services Preview */}
       <section className="py-5 bg-light">
         <div className="container">
           <div className="text-center mb-4">
