@@ -37,6 +37,10 @@ export default function ManageUsers() {
   const [lastStatusUpdate, setLastStatusUpdate] = useState("");
   const [selectedAccount, setSelectedAccount] = useState("checking");
   const [depositAmount, setDepositAmount] = useState("");
+  const [senderAccount, setSenderAccount] = useState("");
+  const [recipientBank, setRecipientBank] = useState("");
+  const [reference, setReference] = useState("");
+  const [transferDate, setTransferDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -46,7 +50,7 @@ export default function ManageUsers() {
   };
 
   // Generic API request handler
-  const makeApiRequest = async (url, method, data = null) => {
+  const makeApiRequest = React.useCallback(async (url, method, data = null) => {
     try {
       const headers = {
         "Content-Type": "application/json",
@@ -70,7 +74,7 @@ export default function ManageUsers() {
       console.error("API Request Error:", error);
       throw error;
     }
-  };
+  }, []);
 
   // Fetch user data
   useEffect(() => {
@@ -117,7 +121,7 @@ export default function ManageUsers() {
       setError("No user ID provided");
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, makeApiRequest]);
 
   // Initialize Bootstrap tooltips
   useEffect(() => {
@@ -132,8 +136,25 @@ export default function ManageUsers() {
 
   // Handle deposit
   const handleDeposit = async () => {
-    if (!depositAmount || parseFloat(depositAmount) <= 0) {
+    const amount = parseFloat(depositAmount);
+    if (!amount || amount <= 0) {
       alert("Please enter a valid deposit amount.");
+      return;
+    }
+    if (!senderAccount) {
+      alert("Please enter a sender account.");
+      return;
+    }
+    if (!recipientBank) {
+      alert("Please enter a recipient bank.");
+      return;
+    }
+    if (!reference) {
+      alert("Please enter a description/reference.");
+      return;
+    }
+    if (!transferDate) {
+      alert("Please select a valid date and time.");
       return;
     }
 
@@ -148,12 +169,20 @@ export default function ManageUsers() {
               : selectedAccount === "savings"
               ? "Savings Account"
               : "Investment Account",
-          amount: parseFloat(depositAmount),
+          amount,
+          senderAccount,
+          recipientBank,
+          reference,
+          transferDate,
         }
       );
 
       alert(response.message);
       setDepositAmount("");
+      setSenderAccount("");
+      setRecipientBank("");
+      setReference("");
+      setTransferDate("");
       // Refresh user data
       const userResponse = await makeApiRequest(
         `${API_BASE_URL}/users/${userId}`,
@@ -295,79 +324,86 @@ export default function ManageUsers() {
               </div>
             </div>
 
-         {/* Deposit Management Card */}
-         <div className="col-md-6">
-           <div className="card shadow-sm">
-           <div className="card-body">
-             <h5 className="card-title">Deposit Management</h5>
-             <div className="mb-3">
-             <label className="form-label">Account Type</label>
-             <select
-               className="form-select"
-               value={selectedAccount}
-               onChange={(e) => setSelectedAccount(e.target.value)}
-             >
-               <option value="checking">Checking Account</option>
-               <option value="savings">Savings Account</option>
-               <option value="investment">Investment Account</option>
-             </select>
-             </div>
-             <div className="mb-3">
-             <label className="form-label">Amount</label>
-             <div className="input-group">
-               <span className="input-group-text">$</span>
-               <input
-               type="number"
-               className="form-control"
-               placeholder="Enter amount"
-               value={depositAmount}
-               onChange={(e) => setDepositAmount(e.target.value)}
-               />
-             </div>
-             </div>
-             <div className="mb-3">
-             <label className="form-label">Date and Time</label>
-             <input
-               type="datetime-local"
-               className="form-control"
-               placeholder="Select date and time"
-             />
-             </div>
-             <div className="mb-3">
-             <label className="form-label">Recipient</label>
-             <input
-               type="text"
-               className="form-control"
-               placeholder="Enter recipient name"
-             />
-             </div>
-             <div className="mb-3">
-             <label className="form-label">Bank</label>
-             <input
-               type="text"
-               className="form-control"
-               placeholder="Enter bank name"
-             />
-             </div>
-             <div className="mb-3">
-             <label className="form-label">Description</label>
-             <textarea
-               className="form-control"
-               placeholder="Enter description"
-               rows="3"
-             ></textarea>
-             </div>
-             <button
-             className="btn w-100"
-             style={{ backgroundColor: brandColor, color: "white" }}
-             onClick={handleDeposit}
-             >
-             Process Deposit
-             </button>
-           </div>
-           </div>
-         </div>
-         </div>
+            {/* Deposit Management Card */}
+            <div className="col-md-6">
+              <div className="card shadow-sm">
+                <div className="card-body">
+                  <h5 className="card-title">Deposit Management</h5>
+                  <div className="mb-3">
+                    <label className="form-label">Account Type</label>
+                    <select
+                      className="form-select"
+                      value={selectedAccount}
+                      onChange={(e) => setSelectedAccount(e.target.value)}
+                    >
+                      <option value="checking">Checking Account</option>
+                      <option value="savings">Savings Account</option>
+                      <option value="investment">Investment Account</option>
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Sender Account</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter sender account"
+                      value={senderAccount}
+                      onChange={(e) => setSenderAccount(e.target.value)}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Recipient Bank</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter recipient bank"
+                      value={recipientBank}
+                      onChange={(e) => setRecipientBank(e.target.value)}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Amount</label>
+                    <div className="input-group">
+                      <span className="input-group-text">$</span>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Enter amount"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Date and Time</label>
+                    <input
+                      type="datetime-local"
+                      className="form-control"
+                      value={transferDate}
+                      onChange={(e) => setTransferDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Description/Reference</label>
+                    <textarea
+                      className="form-control"
+                      placeholder="Enter description"
+                      rows="3"
+                      value={reference}
+                      onChange={(e) => setReference(e.target.value)}
+                    ></textarea>
+                  </div>
+                  <button
+                    className="btn w-100"
+                    style={{ backgroundColor: brandColor, color: "white" }}
+                    onClick={handleDeposit}
+                  >
+                    Process Deposit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Status Change Modal */}
           {showStatusModal && (
