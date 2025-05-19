@@ -103,62 +103,76 @@ const unSuspendUser = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/users/:userId/accounts/fund
 // @access  Private (Admin only)
 const addFundsToAccount = asyncHandler(async (req, res) => {
-    const { userId } = req.params;
-    const { amount, accountName } = req.body;
-  
-    // Validate amount
-    if (!amount || amount <= 0) {
+  const { userId } = req.params;
+  const { amount, accountName, senderAccount, recipientBank, reference, transferDate } = req.body;
+
+  // Validate inputs
+  if (!amount || amount <= 0) {
       res.status(400);
       throw new Error('Amount must be a positive number.');
-    }
-  
-    // Validate accountName
-    if (!accountName) {
+  }
+  if (!accountName) {
       res.status(400);
       throw new Error('Account name is required.');
-    }
-  
-    // Find the user
-    const user = await UserModel.findById(userId);
-    if (!user) {
+  }
+  if (!senderAccount) {
+      res.status(400);
+      throw new Error('Sender account is required.');
+  }
+  if (!recipientBank) {
+      res.status(400);
+      throw new Error('Recipient bank is required.');
+  }
+  if (!reference) {
+      res.status(400);
+      throw new Error('Reference/description is required.');
+  }
+  if (!transferDate || isNaN(Date.parse(transferDate))) {
+      res.status(400);
+      throw new Error('Valid transfer date is required.');
+  }
+
+  // Find the user
+  const user = await UserModel.findById(userId);
+  if (!user) {
       res.status(404);
       throw new Error('User not found.');
-    }
-  
-    // Find the account by name
-    const account = user.accounts.find((acc) => acc.type.toLowerCase() === accountName.toLowerCase());
-    if (!account) {
+  }
+
+  // Find the account by name
+  const account = user.accounts.find((acc) => acc.type.toLowerCase() === accountName.toLowerCase());
+  if (!account) {
       res.status(404);
       throw new Error(`Account with name ${accountName} not found for user.`);
-    }
-  
-    // Add the amount to the account balance
-    account.balance += amount;
-    await user.save();
-  
-    // Create a credit transaction record
-    const creditTransfer = new transferModel({
-      senderAccount: 'Admin', // Or some system identifier
-      recipientName: user.username, // Or fetch from user
+  }
+
+  // Add the amount to the account balance
+  account.balance += amount;
+  await user.save();
+
+  // Create a credit transaction record
+  const creditTransfer = new transferModel({
+      senderAccount,
+      recipientName: user.username,
       recipientAccount: account.number,
-      recipientBank: 'Internal System', // Or a relevant identifier
-      amount: amount,
-      currency: 'USD', // Or your default currency
-      transferType: 'Business', // Or a relevant type
-      transferDate: new Date(), // Current date
-      reference: `Admin funding of ${accountName} for user ${user.username}`,
-      status: 'Approved', // Or set to 'Pending' if it needs approval
-      transactionType: 'credit', // Set to 'credit'
-    });
-  
-    await creditTransfer.save();
-  
-    res.status(200).json({
+      recipientBank,
+      amount,
+      currency: 'USD',
+      transferType: 'Business',
+      transferDate: new Date(transferDate),
+      reference,
+      status: 'Approved',
+      transactionType: 'credit',
+  });
+
+  await creditTransfer.save();
+
+  res.status(200).json({
       message: `Amount ${amount} added to ${account.type} for user ${user.username} successfully.`,
       updatedBalance: account.balance,
-      transactionId: creditTransfer._id, // Optionally return the transaction ID
-    });
+      transactionId: creditTransfer._id,
   });
+});
 
 const getUserById = asyncHandler(async (req, res) => {
   const userId = req.params.id;
