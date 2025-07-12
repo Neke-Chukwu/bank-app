@@ -21,11 +21,13 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
 
   // Set current date for transferDate
   useEffect(() => {
-    const currentDate = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    // Format as yyyy-MM-ddTHH:mm for datetime-local input
+    const formatted = now.toISOString().slice(0, 16);
     setFormData((prevData) => ({
       ...prevData,
-      transferDate: currentDate,
-    }));
+      transferDate: formatted,
+   }));
   }, []);
 
   const handleInputChange = (e) => {
@@ -317,17 +319,17 @@ const LocalTransferForm = ({ onClose, userAccounts }) => {
                 </select>
               </div>
               <div className="form-group">
-                <label htmlFor="transferDate">Transfer Date</label>
-                <input
-                  type="date"
+               <label htmlFor="transferDate">Transfer Date & Time</label>
+               <input
+                 type="datetime-local"
                   id="transferDate"
-                  name="transferDate"
-                  value={formData.transferDate}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  disabled
-                />
-              </div>
+                 name="transferDate"
+                 value={formData.transferDate}
+                 onChange={handleInputChange}
+                 className="form-control"
+                 // Remove disabled to allow user input
+               />
+              </div>              
               <div className="form-group">
                 <label htmlFor="reference">Reference (Optional)</label>
                 <input

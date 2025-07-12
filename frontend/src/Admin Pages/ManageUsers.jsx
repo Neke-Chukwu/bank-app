@@ -346,7 +346,7 @@ export default function ManageUsers() {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Enter sender account"
+                      placeholder="Enter sender name"
                       value={senderAccount}
                       onChange={(e) => setSenderAccount(e.target.value)}
                     />

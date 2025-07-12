@@ -118,9 +118,28 @@ const DashboardHome = () => {
         // Handle cards response
         if (cardsResponse.error) {
           console.warn("Cards fetch error:", cardsResponse.error.message);
-        } else {
-          setCardDetails(cardsResponse.data?.cards || null);
-        }
+    } else {
+      const cardsArray = cardsResponse.data?.cards || [];
+      // turn [{cardType: "credit", …}, …] into { credit: {...}, debit: {...} }
+      const mapped = cardsArray.reduce(
+        (acc, card) => ({
+          ...acc,
+          [card.cardType.toLowerCase()]: {
+            id: card._id,
+            type: card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1),
+            brand:
+              localStorage.getItem(`cardBrand_${card.cardType.toLowerCase()}`) ||
+              "Visa",
+            number: card.cardNumber,
+            expiry: card.expiryDate,
+            holder: card.cardHolderName,
+            cvv: card.cvv,
+          },
+        }),
+        { credit: null, debit: null }
+      );
+      setCardDetails(mapped);
+    }
 
         // Only set error if all critical fetches fail
         if (
@@ -174,16 +193,32 @@ const DashboardHome = () => {
     navigate("/login");
   };
 
-  const filteredTransactions = useMemo(() => {
-    if (!Array.isArray(transactions)) return [];
-    return transactions.filter((transaction) => {
+const filteredTransactions = useMemo(() => {
+  if (!Array.isArray(transactions)) return [];
+  const query = searchQuery.toLowerCase();
+  return transactions
+    .filter((transaction) => {
+      // Search across multiple relevant fields
       const recipientName = transaction.recipientName?.toString().toLowerCase() || "";
       const recipientBank = transaction.recipientBank?.toString().toLowerCase() || "";
-      const query = searchQuery.toLowerCase();
-      return recipientName.includes(query) || recipientBank.includes(query);
-    }).slice(0, 5); // Ensure up to 5 transactions for Recent Transactions
-  }, [searchQuery, transactions]);
+      const senderAccount = transaction.senderAccount?.toString().toLowerCase() || "";
+      const reference = transaction.reference?.toString().toLowerCase() || "";
+      const amount = (transaction.amount !== undefined ? transaction.amount.toString() : "");
+      const status = transaction.status?.toString().toLowerCase() || "";
+      const type = transaction.transactionType?.toString().toLowerCase() || "";
 
+      return (
+        recipientName.includes(query) ||
+        recipientBank.includes(query) ||
+        senderAccount.includes(query) ||
+        reference.includes(query) ||
+        amount.includes(query) ||
+        status.includes(query) ||
+        type.includes(query)
+      );
+    })
+    .slice(0, 5); // Ensure up to 5 transactions for Recent Transactions
+}, [searchQuery, transactions]);
   const totalBalance = accounts.reduce((sum, account) => sum + (account.balance || 0), 0);
 
   const quickActions = [
@@ -278,7 +313,7 @@ const DashboardHome = () => {
           Great! Click the button below to send us an email. Our support team will respond with investment details.
         </p>
         <a
-          href="mailto:support@yourbank.com"
+          href="mailto:support@neontrust.us"
           className="btn"
           style={{ backgroundColor: "#1A3D8F", color: "white" }}
           onClick={closeModal}
@@ -323,7 +358,7 @@ const DashboardHome = () => {
   return (
     <DashboardErrorBoundary>
       <div className="bg-light d-flex">
-        <div className="flex-grow-1 p-4">
+        <div className="container flex-grow-1 p-4">
           {/* Header */}
           <header className="bg-white shadow-sm p-3 mb-4">
             <div className="d-flex justify-content-between align-items-center">
@@ -394,7 +429,7 @@ const DashboardHome = () => {
             ) : (
               <div className="row g-3">
                 {accounts.map((account) => (
-                  <div key={account.number} className="col-md-4">
+                  <div key={account.number} className="col-10 col-md-4">
                     <div
                       className="card p-3 shadow-sm border-0 account-card"
                       style={{
@@ -426,7 +461,7 @@ const DashboardHome = () => {
             <h2 className="h5 mb-3">Quick Actions</h2>
             <div className="row g-3">
               {quickActions.map((action) => (
-                <div key={action.id} className="col-6 col-sm-4 col-md-2 text-center">
+                <div key={action.id} className="col-6 col-md-3 text-center">
                   <div
                     className="card p-3 shadow-sm"
                     onClick={() => setActiveModal(action.name)}
@@ -447,41 +482,49 @@ const DashboardHome = () => {
 
           {/* Card Section */}
           <div className="card shadow-sm mb-4">
-            <div className="m-4 card-header bg-white border-0">
-              <h2 className="h5 mb-3">Your Cards</h2>
-              <p className="text-muted">View and manage your debit and credit cards.</p>
-            </div>
-            <div className="card-body text-center">
-              {cardDetails && (cardDetails.credit || cardDetails.debit) ? (
-                <>
-                  <div className="row">
-                    <div className="col-md-6 mb-4">
+           <div className="m-4 card-header bg-white border-0">
+             <h2 className="h5 mb-3">Your Cards</h2>
+             <p className="text-muted">View and manage your debit and credit cards.</p>
+           </div>
+           <div className="card-body text-center">
+             {cardDetails && (cardDetails.credit || cardDetails.debit) ? (
+               <div className="row">
+                 {cardDetails.credit && (
+                   <div className="col-md-6 mb-4">
+                     <CreditCard
+                       card={cardDetails.credit}
+                       onDelete={() =>
+                         handleDeleteCard(cardDetails.credit.id, cardDetails.credit.type)
+                       }
+                     />
+                   </div>
+                 )}
+                 {cardDetails.debit && (
+                   <div className="col-md-6 mb-4">
                       <CreditCard
-                        card={cardDetails.credit || cardDetails.debit}
+                        card={cardDetails.debit}
                         onDelete={() =>
-                          handleDeleteCard(
-                            (cardDetails.credit || cardDetails.debit).id,
-                            (cardDetails.credit || cardDetails.debit).type
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <p className="text-muted">No credit or debit card added to your account.</p>
-                  <button
-                    className="btn btn-primary"
-                    style={{ backgroundColor: "#1A3D8F", borderColor: "#1A3D8F" }}
-                    onClick={() => navigate("/user/cards")}
-                  >
-                    Go to Cards
-                  </button>
-                </div>
-              )}
-            </div>
+                          handleDeleteCard(cardDetails.debit.id, cardDetails.debit.type)
+                       }
+                     />
+                   </div>
+                 )}
+               </div>
+             ) : (
+               <div>
+                 <p className="text-muted">No credit or debit card added to your account.</p>
+                 <button
+                   className="btn btn-primary"
+                   style={{ backgroundColor: "#1A3D8F", borderColor: "#1A3D8F" }}
+                   onClick={() => navigate("/user/cards")}
+                 >
+                   Go to Cards
+                 </button>
+               </div>
+             )}
+           </div>
           </div>
+
 
           {/* Recent Transactions */}
           <div className="card shadow-sm">
