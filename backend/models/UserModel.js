@@ -20,15 +20,22 @@ const userSchema = new Schema(
     password: { type: String, required: true },
     phone: {
       type: String,
-      match: /^[0-9]{10,15}$/, // Example: Only allow 10-15 digits
-      required: false, // Set to `true` if the phone number is mandatory
+      match: /^[0-9]{10,15}$/, // Only allow 10-15 digits
+      required: false,
     },
     accountNumber: { type: String, unique: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     accounts: [accountSchema], // Array of accounts
-    profileImage: { type: String, default: '../../frontend/public/Profile.png' }, // Profile picture URL
-    idDocument: { type: String, default: null }, // URL or path to the uploaded ID document
-    status:{ type: Boolean, default: true }, // true for active, false for suspended
+    profileImage: {
+      type: Schema.Types.ObjectId,
+      ref: 'ProfileImage',
+      default: null, // Reference to ProfileImage document
+    },
+    idDocument: { 
+      frontUrl: { type: String, default: null }, // URL for front of ID document
+      backUrl: { type: String, default: null }, // URL for back of ID document
+    },
+    status: { type: Boolean, default: true }, // true for active, false for suspended
     lastLogin: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },

@@ -10,6 +10,7 @@ import userRoutes from './routes/userRoutes.js';
 import transferRoutes from './routes/transferRoutes.js'; 
 import adminRoutes from './routes/adminRoutes.js';
 import cardRoutes from './routes/cardRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -40,7 +41,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ Routes
-app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes, uploadRoutes); 
 app.use('/api/transfers', transferRoutes); 
 app.use('/api/admin', adminRoutes); 
 app.use('/api/card', cardRoutes);

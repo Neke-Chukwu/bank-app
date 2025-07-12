@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
 import asyncHandler from '../middlewares/asyncHandler.js';
-import UserModel from '../models/UserModel.js'; 
-import createToken from '../utils/createToken.js'; 
+import UserModel from '../models/UserModel.js';
+import ProfileImageModel from '../models/uploadModel.js'; // Import ProfileImageModel
+import createToken from '../utils/createToken.js';
 
 const generateAccountNumber = () =>
   'NTB' + Math.floor(100000000 + Math.random() * 900000000);
@@ -10,7 +11,7 @@ const generateAccountNumber = () =>
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  console.log('REGISTER payload:', req.body); // Debugging: Log the registration payload
+  console.log('REGISTER payload:', req.body);
   const { username, email, password } = req.body;
 
   console.log('Checking if user already exists...');
@@ -42,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password: hashedPassword,
     accountNumber: generateAccountNumber(),
-    accounts: defaultAccounts, // Add default accounts
+    accounts: defaultAccounts,
   });
 
   console.log('Saving user to database...');
@@ -72,15 +73,19 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await UserModel.findOne({ $or: [{ username }, { email }] });
 
   if (user && (await bcrypt.compare(password, user.password))) {
-    // Generate and set the JWT cookie, and get the token string
     const token = createToken(res, user._id);
+
+    // Update lastLogin
+    user.lastLogin = new Date();
+    await user.save();
 
     res.status(200).json({
       _id: user._id,
       username: user.username,
       email: user.email,
       role: user.role,
-      token: token, // Send the token in the response
+      profileImage: user.profileImage,
+      token: token,
       message: 'Login successful',
     });
   } else {
@@ -89,31 +94,47 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Logout user
+// @route   POST /api/users/logout
+// @access  Public
 const logoutUser = asyncHandler(async (req, res) => {
   console.log('Logging out user...');
-  res.clearCookie('token'); // Clear the token cookie
+  res.clearCookie('token');
   res.status(200).json({ message: 'Logout successful' });
 });
 
-
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
-  // The user's information is already attached to the request by the 'authenticate' middleware
-  // as 'req.user'.  We can directly access it here.
-  const user = await UserModel.findById(req.user._id).select('-password');
+  const user = await UserModel.findById(req.user._id)
+    .select('-password')
+    .populate('profileImage');
 
   if (!user) {
-    // It's possible that the user was deleted after the token was issued.
     res.status(404);
     throw new Error('User not found');
   }
 
-  // Send the user data in the response.  Include the accounts information.
   res.status(200).json({
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-    accounts: user.accounts,
+    user: {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone || '',
+      accounts: user.accounts,
+      profileImage: user.profileImage
+        ? {
+            data: user.profileImage.data.toString('base64'),
+            contentType: user.profileImage.contentType,
+          }
+        : { data: null, contentType: '' },
+      idDocument: user.idDocument,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+    },
   });
 });
 
@@ -121,7 +142,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
 // @route   GET /api/users/accounts
 // @access  Private
 const getUserAccounts = asyncHandler(async (req, res) => {
-  const userId = req.user._id; // Access user ID from req.user
+  const userId = req.user._id;
 
   const user = await UserModel.findById(userId).select('accounts');
 
@@ -133,56 +154,48 @@ const getUserAccounts = asyncHandler(async (req, res) => {
   res.status(200).json(user.accounts);
 });
 
-const getUserData = async (req, res) => {
-  try {
-    // Use the provided userId from the route parameter or fallback to the authenticated user's ID
-    const userId = req.params.id || req.user?._id;
+// @desc    Get user data
+// @route   GET /api/users/:id
+// @access  Private
+const getUserData = asyncHandler(async (req, res) => {
+  const user = await UserModel.findById(req.user._id)
+    .select('-password')
+    .populate('profileImage');
 
-    if (!userId) {
-      return res.status(400).json({ message: "User ID is required." });
-    }
-
-    // Find the user and exclude the password
-    const user = await UserModel.findById(req.user?._id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
-
-    // Return the user data
-    return res.status(200).json({
-      user: {
-        username: user.username,
-        email: user.email,
-        accounts: user.accounts, // Include accounts in the response
-        profileImage: user.profileImage,
-        role: user.role,
-        status: user.status, // Include status
-        createdAt: user.createdAt, // Include creation date
-        lastLogin: user.lastLogin, // Include last login
-      },
-    });
-  } catch (err) {
-    console.error(`Error fetching user data for userId: ${req.params.id || req.user?._id}`, err);
-
-    // Handle token expiration error
-    if (err.name === "TokenExpiredError") {
-      return res.status(403).json({ message: "Token expired, please log in again." });
-    }
-
-    // Handle malformed token error
-    if (err.name === "JsonWebTokenError") {
-      return res.status(403).json({ message: "Invalid token, please log in again." });
-    }
-
-    return res.status(500).json({ message: "Server error. Please try again later." });
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found.');
   }
-};
+
+  console.log('getUserData - Populated profileImage:', user.profileImage);
+
+  res.status(200).json({
+    user: {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone || '',
+      accounts: user.accounts,
+      profilePicture: user.profileImage
+        ? {
+            data: user.profileImage.data.toString('base64'),
+            contentType: user.profileImage.contentType,
+          }
+        : { data: null, contentType: '' },
+      idDocument: user.idDocument || { frontUrl: '', backUrl: '' },
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+    },
+  });
+});
 
 // @desc    Get savings accounts
 // @route   GET /api/users/accounts/savings
 // @access  Private
 const getSavingsAccounts = asyncHandler(async (req, res) => {
-  const userId = req.user._id; // Access user ID from req.user
+  const userId = req.user._id;
 
   const user = await UserModel.findById(userId).select('accounts');
   if (!user) {
@@ -190,7 +203,6 @@ const getSavingsAccounts = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Filter savings accounts from the user's accounts
   const savingsAccounts = user.accounts.filter(
     (account) => account.type === 'Savings Account'
   );
@@ -202,11 +214,11 @@ const getSavingsAccounts = asyncHandler(async (req, res) => {
   res.status(200).json(savingsAccounts);
 });
 
-//@desc  Get investment accounts
-//@route  GET /api/users/accounts/investment
-//@access  Private
+// @desc    Get investment accounts
+// @route   GET /api/users/accounts/investment
+// @access  Private
 const getInvestmentAccounts = asyncHandler(async (req, res) => {
-  const userId = req.user._id; // Access user ID from req.user
+  const userId = req.user._id;
 
   const user = await UserModel.findById(userId).select('accounts');
   if (!user) {
@@ -214,7 +226,6 @@ const getInvestmentAccounts = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Filter investment accounts from the user's accounts
   const investmentAccounts = user.accounts.filter(
     (account) => account.type === 'Investment Account'
   );
@@ -226,5 +237,13 @@ const getInvestmentAccounts = asyncHandler(async (req, res) => {
   res.status(200).json(investmentAccounts);
 });
 
-
-export { registerUser, loginUser, logoutUser, getUserProfile, getUserAccounts, getUserData, getSavingsAccounts, getInvestmentAccounts };
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getUserProfile,
+  getUserAccounts,
+  getUserData,
+  getSavingsAccounts,
+  getInvestmentAccounts,
+};
